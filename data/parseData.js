@@ -28,8 +28,9 @@ const parse = async () => {
 
   const strategies = Object.fromEntries(
     model.map(row => [
-      row.Strategy,
+      row.Strategy.trim(),
       {
+        label: row.Strategy,
         details: row.Paragraph,
         outputs: arrayify(row.Output).map(output => outputs.indexOf(output)),
         immediateOutputs: arrayify(row['Immediate Outcomes <1year']).map(output =>
@@ -38,9 +39,7 @@ const parse = async () => {
         intermediateOutputs: arrayify(row['Intermediate Outcomes 1-5 years']).map(output =>
           intermediateOutputs.indexOf(output)
         ),
-        longTermOutputs: arrayify(row['Long-term Outcomes (5-10+ years)']).map(output =>
-          longTermOutputs.indexOf(output)
-        ),
+        research: [],
       },
     ])
   );
@@ -54,10 +53,26 @@ const parse = async () => {
     longTermOutputs,
   };
 
-  console.log(data);
-  console.log(research);
+  research.forEach(r => {
+    const researchStrategy = r.Strategy.trim();
+    if (!data.strategies[researchStrategy]) {
+      console.log(`No strategy found for ${researchStrategy}`);
+      return;
+    }
+    const citationSanitized = r['Citation'].split('http');
+    if (citationSanitized.length !== 2) {
+      console.log('Error processing citation', r['Citation']);
+    }
+    const researchDatum = {
+      citation: citationSanitized[0],
+      citationLinkText: 'http' + citationSanitized[1],
+      citationLink: r['Citation Link'],
+      relatedOutcome: r['Related Outcome'],
+    };
+    data.strategies[researchStrategy].research.push(researchDatum);
+  });
 
-  fs.writeFileSync('../dist/data.json', JSON.stringify(data), 'utf8');
+  fs.writeFileSync('../dist/assets/data.json', JSON.stringify(data), 'utf8');
 };
 
 parse();
