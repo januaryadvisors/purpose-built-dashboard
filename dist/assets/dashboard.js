@@ -48,7 +48,7 @@ window.onload = async function () {
   const columns = {
     [inputId]: {
       columnColor: brandGradient[0],
-      label: 'Input',
+      label: 'Inputs',
     },
     [strategiesId]: {
       columnColor: brandGradient[1],
@@ -56,7 +56,7 @@ window.onload = async function () {
     },
     [outputsId]: {
       columnColor: brandGradient[2],
-      label: 'Output',
+      label: 'Outputs',
     },
     [immediateOutputsId]: {
       columnColor: brandGradient[3],
