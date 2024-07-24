@@ -31,7 +31,7 @@ const parse = async () => {
       row.Strategy.trim(),
       {
         label: row.Strategy,
-        details: row.Paragraph,
+        details: row['Paragraph description'],
         outputs: arrayify(row.Output).map(output => outputs.indexOf(output)),
         immediateOutputs: arrayify(row['Immediate Outcomes <1year']).map(output =>
           immediateOutputs.indexOf(output)
@@ -39,6 +39,8 @@ const parse = async () => {
         intermediateOutputs: arrayify(row['Intermediate Outcomes 1-5 years']).map(output =>
           intermediateOutputs.indexOf(output)
         ),
+        // All long term outputs are associated with every strategy
+        longTermOutputs: longTermOutputs.map((_, i) => i),
         research: [],
       },
     ])
@@ -63,13 +65,23 @@ const parse = async () => {
     if (citationSanitized.length !== 2) {
       console.log('Error processing citation', r['Citation']);
     }
+    const relatedOutcome = r['Related Outcome'].trim();
     const researchDatum = {
       citation: citationSanitized[0],
       citationLinkText: 'http' + citationSanitized[1],
       citationLink: r['Citation Link'],
-      relatedOutcome: r['Related Outcome'],
+      relatedOutcomes: [relatedOutcome],
     };
-    data.strategies[researchStrategy].research.push(researchDatum);
+    const match = data.strategies[researchStrategy].research.find(
+      rs => rs.citation === researchDatum.citation
+    );
+    if (!match) {
+      data.strategies[researchStrategy].research.push(researchDatum);
+    } else {
+      if (!match.relatedOutcomes.includes(relatedOutcome)) {
+        match.relatedOutcomes.push(relatedOutcome);
+      }
+    }
   });
 
   fs.writeFileSync('../dist/assets/data.json', JSON.stringify(data), 'utf8');

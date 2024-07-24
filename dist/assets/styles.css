@@ -1,0 +1,174 @@
+@font-face {
+  font-family: 'Franklin Gothic';
+  src: url('../fonts/ITC Franklin Gothic Book.otf') format('opentype');
+}
+@font-face {
+  font-family: 'Franklin Gothic';
+  font-weight: 500;
+  src: url('../fonts/ITC Franklin Gothic Medium.otf') format('opentype');
+}
+#momentum-dashboard {
+  font-family: 'Franklin Gothic', Helvetica, sans-serif;
+  color: '#222323';
+  padding: 32px 48px;
+}
+#momentum-dashboard h1 {
+  margin: 0;
+  padding: 0;
+  text-transform: uppercase;
+}
+#momentum-dashboard-intro {
+  padding: 0 0 24px;
+}
+#momentum-dashboard-header-wrapper {
+  display: flex;
+  gap: 12px;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1)) drop-shadow(0 1px 1px rgba(0, 0, 0, 0.06));
+}
+#momentum-dashboard-columns-wrapper {
+  display: flex;
+  gap: 12px;
+}
+.momentum-dashboard-header {
+  align-items: center;
+  display: flex;
+  margin: 0 0 12px 0;
+  position: relative;
+  width: 20%;
+}
+.momentum-dashboard-header-text {
+  align-items: center;
+  align-self: stretch;
+  display: flex;
+  flex-grow: 1;
+  font-size: 18px;
+  font-weight: 500;
+  margin: 0 0 0 12px;
+  letter-spacing: 0.4px;
+  padding: 16px 16px 16px 18px;
+  text-transform: uppercase;
+}
+.momentum-dashboard-column-wrapper {
+  border-radius: 12px;
+  font-size: 16px;
+  line-height: 22px;
+  width: 20%;
+}
+.momentum-dashboard-data-wrapper {
+  margin: 0 6px;
+  position: relative;
+  transition: all 0.3 ease-in-out;
+}
+.momentum-dashboard-bg-img {
+  height: calc(100% - 12px);
+  object-fit: fill;
+  position: absolute;
+  top: 6px;
+  visibility: hidden;
+  width: 100%;
+  z-index: -1;
+}
+.momentum-dashboard-datum {
+  border-radius: 8px;
+  margin: 6px 0;
+  padding: 12px;
+}
+#momentum-dashboard-modal button,
+#momentum-dashboard button {
+  background: none;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+}
+.momentum-dashboard-button {
+  font-weight: 500;
+  text-align: left;
+  text-decoration: underline;
+}
+.momentum-dashboard-button:hover {
+  color: #686868 !important;
+}
+.momentum-dashboard-filter-button-wrapper {
+  color: #f78600 !important;
+  display: flex;
+  font-size: 0.9em;
+  justify-content: flex-end;
+  text-decoration: underline;
+}
+.momentum-dashboard-filter-button-wrapper:hover {
+  color: #f9991f !important;
+}
+.momentum-dashboard-see-all {
+  display: flex;
+  justify-content: center;
+  padding: 12px;
+  cursor: pointer;
+  border: 1px solid #fdbc4a !important;
+  margin: 12px;
+  border-radius: 8px;
+  background-color: #fdcd6c !important;
+  font-weight: 500 !important;
+  width: calc(100% - 24px);
+}
+#momentum-dashboard-modal {
+  background-color: rgb(0, 0, 0, 0.2);
+  display: none;
+  font-family: 'Franklin Gothic', Helvetica, sans-serif;
+  height: 100%;
+  left: 0;
+  overflow: auto;
+  position: fixed;
+  top: 0;
+  width: 100%;
+  z-index: 9999;
+}
+#momentum-dashboard-modal-content {
+  background-color: #fefefe;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  margin: 5% auto;
+  padding: 20px;
+  width: 70%;
+}
+#momentum-dashboard-modal-header {
+  font-size: 24px;
+  font-weight: 500;
+  letter-spacing: 0.4px;
+  margin-bottom: 1em;
+  text-transform: uppercase;
+}
+#momentum-dashboard-close-wrapper {
+  display: flex;
+  justify-content: flex-end;
+}
+#momentum-dashboard-close {
+  cursor: pointer;
+  font-size: 28px;
+  font-weight: bold;
+}
+#momentum-dashboard-research-header {
+  font-weight: 500;
+  margin: 24px 0 8px 0;
+  text-transform: uppercase;
+}
+.momentum-dashboard-research-item {
+  border-bottom: 1px solid #aaaaaa;
+  padding: 0 0 16px 0;
+  margin: 16px 0 0 0;
+  word-break: break-word;
+}
+.momentum-dashboard-research-item-header {
+  font-size: 18px;
+  font-weight: 500;
+  padding-bottom: 2px;
+}
+#momentum-dashboard-modal a {
+  color: #f78600;
+}
+.momentum-dashboard-research-outcomes-wrapper {
+  margin: 8px 0 0;
+}
+.momentum-dashboard-research-outcomes {
+  font-weight: 500;
+}
