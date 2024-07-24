@@ -8,8 +8,9 @@
   src: url('../fonts/ITC Franklin Gothic Medium.otf') format('opentype');
 }
 #momentum-dashboard {
-  font-family: 'Franklin Gothic', Helvetica, sans-serif;
   color: '#222323';
+  font-family: 'Franklin Gothic', Helvetica, sans-serif;
+  overflow: hidden;
   padding: 32px 48px;
 }
 #momentum-dashboard h1 {
@@ -19,6 +20,10 @@
 }
 #momentum-dashboard-intro {
   padding: 0 0 24px;
+}
+#momentum-dashboard-body-wrapper {
+  overflow-x: auto;
+  width: 100%;
 }
 #momentum-dashboard-header-wrapper {
   display: flex;
@@ -32,9 +37,11 @@
 .momentum-dashboard-header {
   align-items: center;
   display: flex;
+  flex-shrink: 0;
   margin: 0 0 12px 0;
+  min-width: 180px;
   position: relative;
-  width: 20%;
+  width: calc((100% + 12px) / 6);
 }
 .momentum-dashboard-header-text {
   align-items: center;
@@ -51,22 +58,15 @@
 .momentum-dashboard-column-wrapper {
   border-radius: 12px;
   font-size: 16px;
+  flex-shrink: 0;
   line-height: 22px;
-  width: 20%;
+  min-width: 180px;
+  width: calc(100% / 6);
 }
 .momentum-dashboard-data-wrapper {
   margin: 0 6px;
   position: relative;
   transition: all 0.3 ease-in-out;
-}
-.momentum-dashboard-bg-img {
-  height: calc(100% - 12px);
-  object-fit: fill;
-  position: absolute;
-  top: 6px;
-  visibility: hidden;
-  width: 100%;
-  z-index: -1;
 }
 .momentum-dashboard-datum {
   border-radius: 8px;

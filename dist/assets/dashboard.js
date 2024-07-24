@@ -36,8 +36,9 @@ window.onload = async function () {
   };
   addIntro();
 
-  const headersWrapper = addElement(dashboard, 'div', 'header-wrapper');
-  const columnsWrapper = addElement(dashboard, 'div', 'columns-wrapper');
+  const dashboardWrapper = addElement(dashboard, 'div', 'body-wrapper');
+  const headersWrapper = addElement(dashboardWrapper, 'div', 'header-wrapper');
+  const columnsWrapper = addElement(dashboardWrapper, 'div', 'columns-wrapper');
 
   const textClass = `${namespace}-datum`;
 
@@ -312,11 +313,6 @@ window.onload = async function () {
         dataDiv.style.borderBottom = `1px solid ${columns[columnId].columnColor}80`;
       }
       wrapperDiv.appendChild(dataDiv);
-
-      const img = document.createElement('img');
-      img.src = './assets/brush.svg';
-      img.className = `${namespace}-bg-img`;
-      dataDiv.appendChild(img);
 
       if (columnId === strategiesId) {
         dataDiv.onmouseenter = highlightStrategyOutcomes(i);
