@@ -68,7 +68,7 @@ window.onload = async function () {
     },
     [longTermOutputsId]: {
       columnColor: brandGradient[5],
-      label: 'Long Term Outcomes',
+      label: 'Long-Term Outcomes',
     },
   };
 
@@ -358,4 +358,13 @@ window.onload = async function () {
   addDataToColumn(data.immediateOutputs, immediateOutputsId);
   addDataToColumn(data.intermediateOutputs, intermediateOutputsId);
   addDataToColumn(data.longTermOutputs, longTermOutputsId);
+
+  const addFooter = () => {
+    const footer = addElement(dashboard, 'div', 'footer');
+    const footerText = addElement(footer, 'div');
+    footerText.innerText = 'Built and maintained by';
+    const footerLogo = addElement(footer, 'img');
+    footerLogo.src = './assets/logo.svg';
+  };
+  addFooter();
 };

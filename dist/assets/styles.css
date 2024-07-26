@@ -176,6 +176,20 @@
 .momentum-dashboard-research-outcomes {
   font-weight: 500;
 }
+#momentum-dashboard-footer {
+  align-items: center;
+  display: flex;
+  font-size: 18px;
+  gap: 8px;
+  justify-content: center;
+  margin: 48px 0 24px 0;
+}
+
+#momentum-dashboard-footer img {
+  height: 24px;
+  transform: translateX(-2px);
+}
+
 @media screen and (max-width: 1280px) {
   #momentum-dashboard {
     padding: 0;

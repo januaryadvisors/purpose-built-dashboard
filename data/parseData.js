@@ -84,6 +84,13 @@ const parse = async () => {
     }
   });
 
+  Object.entries(data.strategies).forEach(([_, strategy], i) => {
+    // Alphabetize research ignoring any leading smartquotes
+    strategy.research.sort((a, b) => {
+      return a.citation.replace('“', '').localeCompare(b.citation.replace('“', ''));
+    });
+  });
+
   fs.writeFileSync('../dist/assets/data.json', JSON.stringify(data), 'utf8');
 };
 
