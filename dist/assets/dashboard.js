@@ -11,6 +11,48 @@ window.onload = async function () {
     return el;
   };
 
+  const addTooltip = (parent, tooltipText, root) => {
+    const infoWrapper = addElement(parent, 'div', null, 'tooltip-icon');
+    infoWrapper.style.display = 'inline';
+    const infoEl = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    infoEl.style.position = '';
+    infoEl.setAttribute('viewBox', '0 0 24 24');
+    const infoPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    infoPath.setAttribute(
+      'd',
+      'm11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z'
+    );
+    infoPath.setAttribute('stroke-linecap', 'round');
+    infoPath.setAttribute('stroke-linejoin', 'round');
+    infoPath.setAttribute('stroke-width', 1.5);
+    infoEl.appendChild(infoPath);
+    infoWrapper.appendChild(infoEl);
+    parent.appendChild(infoWrapper);
+    // Create Tooltip
+    const tooltip = addElement(root, 'div', null, 'tooltip');
+    tooltip.innerText = tooltipText;
+    // tooltip.style.display = 'none';
+    tooltip.style.position = 'fixed';
+    tooltip.style.transform = 'translateY(-50%)';
+
+    infoWrapper.onmouseenter = () => {
+      const bounds = infoEl.getBoundingClientRect();
+      if (bounds.left < window.innerWidth / 2) {
+        tooltip.style.left = bounds.right + 'px';
+        tooltip.style.top = bounds.top + 12 + 'px';
+        tooltip.style.margin = '0 0 0 6px';
+      } else {
+        tooltip.style.right = window.innerWidth - bounds.left + 'px';
+        tooltip.style.top = bounds.top + 12 + 'px';
+        tooltip.style.margin = '0 6px 0';
+      }
+      tooltip.style.display = 'block';
+    };
+    infoWrapper.onmouseleave = () => {
+      tooltip.style.display = 'none';
+    };
+  };
+
   // Namespace used for css classes to prevent collision
   const namespace = 'momentum-dashboard';
 
@@ -28,11 +70,17 @@ window.onload = async function () {
   // Adds intro paragrah and header
   const addIntro = () => {
     const intro = addElement(dashboard, 'div', 'intro');
-    const introHeader = addElement(intro, 'h1');
-    introHeader.innerText = 'Lorem Ipsum';
-    const introBody = addElement(intro, 'p');
-    introBody.innerText =
-      'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.';
+    // const introHeader = addElement(intro, 'h1');
+    // introHeader.innerText = 'Lorem Ipsum';
+    const introBody = addElement(intro, 'div');
+    introBody.innerHTML = `
+      <p>Café Momentum’s logic model shows the steps necessary for our organization to transform young lives. The logic model outlines how each activity will lead to desired change. In it, you can find our program materials and resources (inputs), the strategies and activities we implement and the specific results we strive to achieve (outputs and outcomes). This model helps us clearly communicate our goals, monitor progress and make data-driven decisions to better support our interns and community.</p>
+      <p><i>How can I navigate this logic model?</i> Explore by hovering your mouse over different components to learn about our resources and how strategies are connected to outcomes. Click “learn more” to access a description of the strategy and the research related to strategies and outcomes.</p>
+      <p><i>What is this logic model based on?</i> This logic model is informed by Café Momentum staff and evidence-based practices and research in youth development, economic mobility and human flourishing. It is also guided by Café Momentum’s goal statement. This statement aligns with the long-term outcomes of the logic model.</p>
+      <p><strong>Goal statement:</strong> Create a safe space, within a social enterprise restaurant setting, for youth involved with the justice system to cultivate their social-emotional well-being and sense of agency, and to acquire education and workforce skills that build a foundation for adulthood and prevent further justice system involvement.</p>
+      <p>Contact Steph Frances, <a href=mailto:"steph@momentumadvisory.co">steph@momentumadvisory.co</a>, to learn more about our approach and methodology.</p>
+      <p style="font-size:0.9em">>> Published in August 2024</p>
+    `;
   };
   addIntro();
 
@@ -149,11 +197,14 @@ window.onload = async function () {
   };
 
   // Creates an arrow for the header with text
-  const createHeaderElement = ({ columnColor, label, isLast }) => {
+  const createHeaderElement = ({ columnColor, label, tooltip, isLast }) => {
     const headerEl = addElement(headersWrapper, 'div', null, 'header');
-    const textEl = addElement(headerEl, 'div', null, 'header-text');
-    textEl.innerText = label;
-    textEl.style.background = columnColor;
+    const labelWrapper = addElement(headerEl, 'div', null, 'header-label-wrapper');
+    const labelInnerWrapper = addElement(labelWrapper, 'div');
+    const headerText = addElement(labelInnerWrapper, 'h2');
+    headerText.innerText = label + ' ';
+    addTooltip(labelInnerWrapper, tooltip, dashboardWrapper);
+    labelWrapper.style.background = columnColor;
 
     // Create the left side of the header arrows
     const arrowLeftEl = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
@@ -187,10 +238,20 @@ window.onload = async function () {
     }
   };
 
+  let data = null;
+  try {
+    const dataRaw = await fetch('./assets/data.json');
+    data = await dataRaw.json();
+    console.log(data);
+  } catch (error) {
+    return;
+  }
+
   Object.entries(columns).map(([_, { columnColor, label }], i) => {
     createHeaderElement({
       columnColor,
       label,
+      tooltip: data.headerTooltips[i],
       isLast: i === Object.entries(columns).length - 1,
     });
   });
@@ -203,14 +264,6 @@ window.onload = async function () {
     columnWrapper.style.background = `${columnColor}1A`;
     return columnWrapper;
   });
-
-  let data = null;
-  try {
-    const dataRaw = await fetch('./assets/data.json');
-    data = await dataRaw.json();
-  } catch (error) {
-    return;
-  }
 
   // Helper fn that highlights a column if it's associated with the hovered column
   const highlightColumn = (data, columnKey, columnId) => {
@@ -302,7 +355,7 @@ window.onload = async function () {
     seeAllButton.style.display = 'block';
   };
 
-  const addDataToColumn = (data, columnId) => {
+  const addDataToColumn = (data, columnId, tooltips) => {
     data.forEach((datum, i) => {
       const wrapperDiv = document.createElement('div');
       document.getElementById(columnId).appendChild(wrapperDiv);
@@ -338,6 +391,9 @@ window.onload = async function () {
         textDiv.className = textClass;
         dataDiv.appendChild(textDiv);
         textDiv.innerText = datum;
+        if (tooltips) {
+          addTooltip(textDiv, tooltips[i], dashboardWrapper);
+        }
       }
     });
   };
@@ -345,7 +401,7 @@ window.onload = async function () {
   const strategiesColumn = document.getElementById(strategiesId);
   const seeAllButton = document.createElement('button');
 
-  addDataToColumn(data.inputs, inputId);
+  addDataToColumn(data.inputs, inputId, data.inputTooltips);
   addDataToColumn(Object.keys(data.strategies), strategiesId);
 
   seeAllButton.className = `${namespace}-see-all`;
@@ -363,7 +419,11 @@ window.onload = async function () {
     const footer = addElement(dashboard, 'div', 'footer');
     const footerText = addElement(footer, 'div');
     footerText.innerText = 'Built and maintained by';
-    const footerLogo = addElement(footer, 'img');
+    const footerLink = addElement(footer, 'a');
+    footerLink.setAttribute('href', 'http://www.januaryadvisors.com');
+    footerLink.setAttribute('rel', 'noopener noreferrer');
+    footerLink.setAttribute('target', '_blank');
+    const footerLogo = addElement(footerLink, 'img');
     footerLogo.src = './assets/logo.svg';
   };
   addFooter();

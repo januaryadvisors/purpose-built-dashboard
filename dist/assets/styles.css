@@ -11,15 +11,21 @@
   color: #222323;
   font-family: 'Franklin Gothic', Helvetica, sans-serif;
   overflow: hidden;
-  padding: 32px 48px;
+  padding: 24px 48px;
 }
 #momentum-dashboard h1 {
   margin: 0;
   padding: 0;
   text-transform: uppercase;
 }
+#momentum-dashboard a {
+  color: #f78600;
+}
 #momentum-dashboard-intro {
   padding: 0 0 24px;
+}
+#momentum-dashboard-intro i {
+  padding-right: 2px;
 }
 #momentum-dashboard-body-wrapper {
   overflow-x: auto;
@@ -44,17 +50,37 @@
   width: 160px;
   position: relative;
 }
-.momentum-dashboard-header-text {
+.momentum-dashboard-header-label-wrapper {
   align-items: center;
   align-self: stretch;
   display: flex;
   flex-grow: 1;
-  font-size: 18px;
-  font-weight: 500;
+  gap: 8px;
+  padding: 16px 4px 16px 12px;
   margin: 0 0 0 12px;
   letter-spacing: 0.4px;
-  padding: 16px 16px 16px 18px;
   text-transform: uppercase;
+}
+.momentum-dashboard-header-label-wrapper h2 {
+  display: inline;
+  font-size: 18px;
+  font-weight: 500;
+  margin: 0;
+}
+.momentum-dashboard-tooltip-icon {
+  cursor: pointer;
+  margin: 0 0 0 2px;
+}
+.momentum-dashboard-tooltip-icon:hover svg {
+  opacity: 0.5;
+}
+.momentum-dashboard-tooltip-icon svg {
+  pointer-events: none;
+  width: 18px;
+}
+.momentum-dashboard-tooltip-icon path {
+  fill: none;
+  stroke: #222323;
 }
 .momentum-dashboard-column-wrapper {
   border-radius: 12px;
@@ -179,29 +205,37 @@
 #momentum-dashboard-footer {
   align-items: center;
   display: flex;
-  font-size: 18px;
+  font-size: 14px;
   gap: 8px;
   justify-content: center;
-  margin: 48px 0 24px 0;
+  margin: 36px 0 24px 0;
 }
 
 #momentum-dashboard-footer img {
-  height: 24px;
+  display: block;
+  height: 14px;
   transform: translateX(-2px);
+}
+
+.momentum-dashboard-tooltip {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(4px);
+  border-radius: 6px;
+  border: 0.5px solid #aaaaaa;
+  font-size: 13px;
+  padding: 6px;
+  max-width: 200px;
 }
 
 @media screen and (max-width: 1280px) {
   #momentum-dashboard {
-    padding: 0;
+    padding: 24px;
   }
   #momentum-dashboard-intro {
-    padding: 32px 32px 24px 32px;
+    padding: 32px 0 24px 0;
   }
-  #momentum-dashboard-body-wrapper {
-    padding: 0 12px;
-  }
-  .momentum-dashboard-header-text {
-    font-size: 16px;
+  .momentum-dashboard-header-label-wrapper h2 {
+    font-size: 14px;
   }
   .momentum-dashboard-column-wrapper {
     font-size: 15px;

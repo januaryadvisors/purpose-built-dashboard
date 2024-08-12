@@ -5,6 +5,8 @@ const parse = async () => {
 
   const modelRaw = fs.readFileSync('./logic_model.csv', { encoding: 'utf8' });
   const researchRaw = fs.readFileSync('./research.csv', { encoding: 'utf8' });
+  const headerTootipsRaw = fs.readFileSync('./header_tooltips.csv', { encoding: 'utf8' });
+  const inputTooltipsRaw = fs.readFileSync('./input_tooltips.csv', { encoding: 'utf8' });
 
   const arrayify = multilineRow => {
     return multilineRow
@@ -19,6 +21,8 @@ const parse = async () => {
 
   const model = d3dsv.csvParse(modelRaw);
   const research = d3dsv.csvParse(researchRaw);
+  const headerTooltips = d3dsv.csvParseRows(headerTootipsRaw);
+  const inputTooltips = d3dsv.csvParse(inputTooltipsRaw);
 
   const inputs = getUnique(model, 'Inputs');
   const outputs = getUnique(model, 'Output');
@@ -47,7 +51,9 @@ const parse = async () => {
   );
 
   const data = {
+    headerTooltips: headerTooltips.map(t => t[1]),
     inputs,
+    inputTooltips: inputs.map(input => inputTooltips.find(t => t[0] === input)[1]),
     strategies,
     outputs,
     immediateOutputs,
