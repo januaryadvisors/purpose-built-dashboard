@@ -31,7 +31,7 @@ window.onload = async function () {
     // Create Tooltip
     const tooltip = addElement(root, 'div', null, 'tooltip');
     tooltip.innerText = tooltipText;
-    // tooltip.style.display = 'none';
+    tooltip.style.display = 'none';
     tooltip.style.position = 'fixed';
     tooltip.style.transform = 'translateY(-50%)';
 
