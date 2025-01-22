@@ -38,16 +38,16 @@ const parse = async () => {
         details: row['Paragraph description'],
         outputs: arrayify(row.Output).map(output => outputs.indexOf(output)),
         immediateOutputs: arrayify(row['Immediate Outcomes <1year']).map(output =>
-          immediateOutputs.indexOf(output)
+          immediateOutputs.indexOf(output),
         ),
         intermediateOutputs: arrayify(row['Intermediate Outcomes 1-5 years']).map(output =>
-          intermediateOutputs.indexOf(output)
+          intermediateOutputs.indexOf(output),
         ),
         // All long term outputs are associated with every strategy
         longTermOutputs: longTermOutputs.map((_, i) => i),
         research: [],
       },
-    ])
+    ]),
   );
 
   const data = {
@@ -79,7 +79,7 @@ const parse = async () => {
       relatedOutcomes: [relatedOutcome],
     };
     const match = data.strategies[researchStrategy].research.find(
-      rs => rs.citation === researchDatum.citation
+      rs => rs.citation === researchDatum.citation,
     );
     if (!match) {
       data.strategies[researchStrategy].research.push(researchDatum);
@@ -97,7 +97,7 @@ const parse = async () => {
     });
   });
 
-  fs.writeFileSync('../dist/assets/data.json', JSON.stringify(data), 'utf8');
+  fs.writeFileSync('../docs/assets/data.json', JSON.stringify(data), 'utf8');
 };
 
 parse();
