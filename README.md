@@ -16,6 +16,12 @@ If you are using VSCode, to run this code locally, use extension `Live Server`, 
 
 ## Deployment
 
+### Staging
+
+This repository has GitHub pages enabled and is configured to deploy the docs folder from the staging branch. If you would like to deploy to staging, simply update the staging branch. I would recommend pulling origin main to your local main and merging it into the local branch you want to deploy to staging to make sure it is up to date, checking out staging and pulling origin staging to your local staging, and then using git reset --hard branch-you-want-to-deploy to overwrite staging with your changes (I would do this over merging into staging in case staging is ahead of the branch you want to deploy). Then push your local staging branch to GitHub. The staging link is: https://januaryadvisors.github.io/momentum-dashboard/
+
+### Production
+
 This application is hosted on Siteground as part of the January Advisors website. To deploy this application:
 
 - Connect to the januaryadvisors.com ftp server using the credentials on 1pw under "JA Logic Models FTP"
