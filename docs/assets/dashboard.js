@@ -20,7 +20,7 @@ window.onload = async function () {
     const infoPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
     infoPath.setAttribute(
       'd',
-      'm11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z'
+      'm11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z',
     );
     infoPath.setAttribute('stroke-linecap', 'round');
     infoPath.setAttribute('stroke-linejoin', 'round');
@@ -65,25 +65,7 @@ window.onload = async function () {
   const intermediateOutputsId = `${namespace}-intermediate-outputs`;
   const longTermOutputsId = `${namespace}-long-term-outputs`;
 
-  // const brandGradient = ['#f7dea0', '#fdcd6c', '#fdbc4a', '#fcab32', '#f9991f', '#f78600'];
-  const brandGradient = ['#fbcdb0','#f8A97d','#f5844a', '#f65c2c',"#D75027", "#b84521"]
-  
-  // Adds intro paragrah and header
-  const addIntro = () => {
-    const intro = addElement(dashboard, 'div', 'intro');
-    // const introHeader = addElement(intro, 'h1');
-    // introHeader.innerText = 'Lorem Ipsum';
-    const introBody = addElement(intro, 'div');
-    introBody.innerHTML = `
-      <p>Café Momentum’s logic model shows the steps necessary for our organization to transform young lives. The logic model outlines how each activity will lead to desired change. In it, you can find our program materials and resources (inputs), the strategies and activities we implement and the specific results we strive to achieve (outputs and outcomes). This model helps us clearly communicate our goals, monitor progress and make data-driven decisions to better support our interns and community.</p>
-      <p><i>How can I navigate this logic model?</i> Explore by hovering your mouse over different components to learn about our resources and how strategies are connected to outcomes. Click “learn more” to access a description of the strategy and the research related to strategies and outcomes.</p>
-      <p><i>What is this logic model based on?</i> This logic model is informed by Café Momentum staff and evidence-based practices and research in youth development, economic mobility and human flourishing. It is also guided by Café Momentum’s goal statement. This statement aligns with the long-term outcomes of the logic model.</p>
-      <p><strong>Goal statement:</strong> Create a safe space, within a social enterprise restaurant setting, for youth involved with the justice system to cultivate their social-emotional well-being and sense of agency, and to acquire education and workforce skills that build a foundation for adulthood and prevent further justice system involvement.</p>
-      <p>Contact Steph Frances, <a href=mailto:"steph@momentumadvisory.co">steph@momentumadvisory.co</a>, to learn more about our approach and methodology.</p>
-      <p style="font-size:0.9em">>> Published in August 2024</p>
-    `;
-  };
-  addIntro();
+  const brandGradient = ['#fbcdb0', '#f8A97d', '#f5844a', '#f65c2c', '#D75027', '#b84521'];
 
   const dashboardWrapper = addElement(dashboard, 'div', 'body-wrapper');
   const headersWrapper = addElement(dashboardWrapper, 'div', 'header-wrapper');
@@ -182,14 +164,14 @@ window.onload = async function () {
         researchEl,
         'div',
         null,
-        'research-outcomes-wrapper'
+        'research-outcomes-wrapper',
       );
       researchOutcomesWrapper.innerText = `Related Outcomes: `;
       const researchOutcomes = addElement(
         researchOutcomesWrapper,
         'span',
         null,
-        'research-outcomes'
+        'research-outcomes',
       );
       researchOutcomes.innerText = relatedOutcomes.join(', ');
     });

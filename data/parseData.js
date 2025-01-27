@@ -26,9 +26,9 @@ const parse = async () => {
 
   const inputs = getUnique(model, 'Inputs');
   const outputs = getUnique(model, 'Output');
-  const immediateOutputs = getUnique(model, 'Immediate Outcomes <1year');
-  const intermediateOutputs = getUnique(model, 'Intermediate Outcomes 1-5 years');
-  const longTermOutputs = getUnique(model, 'Long-term Outcomes (5-10+ years)');
+  const immediateOutputs = getUnique(model, 'Immediate Outcomes');
+  const intermediateOutputs = getUnique(model, 'Intermediate Outcomes');
+  const longTermOutputs = getUnique(model, 'Long-term Outcomes');
 
   const strategies = Object.fromEntries(
     model.map(row => [
@@ -37,10 +37,10 @@ const parse = async () => {
         label: row.Strategy,
         details: row['Paragraph description'],
         outputs: arrayify(row.Output).map(output => outputs.indexOf(output)),
-        immediateOutputs: arrayify(row['Immediate Outcomes <1year']).map(output =>
+        immediateOutputs: arrayify(row['Immediate Outcomes']).map(output =>
           immediateOutputs.indexOf(output),
         ),
-        intermediateOutputs: arrayify(row['Intermediate Outcomes 1-5 years']).map(output =>
+        intermediateOutputs: arrayify(row['Intermediate Outcomes']).map(output =>
           intermediateOutputs.indexOf(output),
         ),
         // All long term outputs are associated with every strategy
@@ -53,7 +53,9 @@ const parse = async () => {
   const data = {
     headerTooltips: headerTooltips.map(t => t[1]),
     inputs,
-    inputTooltips: inputs.map(input => inputTooltips.find(t => t[0] === input)[1]),
+    inputTooltips: inputs.map(
+      input => inputTooltips.find(t => t['Inputs Condensed'] === input)['Description'],
+    ),
     strategies,
     outputs,
     immediateOutputs,
