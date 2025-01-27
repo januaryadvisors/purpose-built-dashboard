@@ -22,14 +22,13 @@
   --med-light-charcoal: #646464;
   --light-charcoal: #c1c1c1;
 
-  --radish: #EB2B33;
+  --radish: #eb2b33;
 
-  --plum: #37183E;
+  --plum: #37183e;
 
-  --kale: #334D48;
+  --kale: #334d48;
   --light-kale: #b3b8b6;
   --dark-kale: #263a36;
-
 }
 
 #momentum-dashboard {
@@ -156,7 +155,7 @@
   justify-content: center;
   padding: 12px;
   cursor: pointer;
-  border: 1px solid var(--med-light-mustard)!important;
+  border: 1px solid var(--med-light-mustard) !important;
   margin: 12px;
   border-radius: 8px;
   background-color: var(--light-mustard) !important;
@@ -254,7 +253,7 @@
 
 @media screen and (max-width: 1280px) {
   #momentum-dashboard {
-    padding: 24px;
+    padding: 48px 24px;
   }
   #momentum-dashboard-intro {
     padding: 32px 0 24px 0;
