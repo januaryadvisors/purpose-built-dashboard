@@ -65,7 +65,7 @@ window.onload = async function () {
   const intermediateOutputsId = `${namespace}-intermediate-outputs`;
   const longTermOutputsId = `${namespace}-long-term-outputs`;
 
-  const brandGradient = ['#f7dea0', '#fdcd6c', '#fdbc4a', '#fcab32', '#f9991f', '#f78600'];
+  const brandGradient = ['#fbcdb0', '#f8A97d', '#f5844a', '#f65c2c', '#D75027', '#b84521'];
 
   const dashboardWrapper = addElement(dashboard, 'div', 'body-wrapper');
   const headersWrapper = addElement(dashboardWrapper, 'div', 'header-wrapper');

@@ -12,6 +12,8 @@ The data for this project lives in `/data`. To process the source files for the 
 
 The application is a super simple project written in vanilla es6 with no external dependencies, currently designed for flexible embedding.
 
+If you are using VSCode, to run this code locally, use extension `Live Server`, navigate to `dist/index.html` and click `go live` on the bottom right of your VSCode window. A simple server will open at `<port>/dist/index.html` where live frontend changes can be viewed. 
+
 ## Deployment
 
 ### Staging

@@ -7,8 +7,33 @@
   font-weight: 500;
   src: url('../fonts/ITC Franklin Gothic Medium.otf') format('opentype');
 }
+
+/* According to the brand guide colors have a base color and then from darkest to lightest: dark <base>, med light <base>, light <base>, background <base> */
+
+:root {
+  --flame: #f65c2c;
+
+  --mustard: #e1b047;
+  --med-light-mustard: #e8c475;
+  --light-mustard: #f6e7c8;
+  --background-neutral: #fcf7ed;
+
+  --charcoal: #313131;
+  --med-light-charcoal: #646464;
+  --light-charcoal: #c1c1c1;
+
+  --radish: #EB2B33;
+
+  --plum: #37183E;
+
+  --kale: #334D48;
+  --light-kale: #b3b8b6;
+  --dark-kale: #263a36;
+
+}
+
 #momentum-dashboard {
-  color: #222323;
+  color: var(--dark-kale);
   font-family: 'Franklin Gothic', Helvetica, sans-serif;
   overflow: hidden;
   padding: 24px 48px;
@@ -19,7 +44,7 @@
   text-transform: uppercase;
 }
 #momentum-dashboard a {
-  color: #f78600;
+  color: var(--flame);
 }
 #momentum-dashboard-intro {
   padding: 0 0 24px;
@@ -80,7 +105,7 @@
 }
 .momentum-dashboard-tooltip-icon path {
   fill: none;
-  stroke: #222323;
+  stroke: var(--dark-kale);
 }
 .momentum-dashboard-column-wrapper {
   border-radius: 12px;
@@ -114,32 +139,32 @@
   text-decoration: underline;
 }
 .momentum-dashboard-button:hover {
-  color: #686868 !important;
+  color: var(--med-light-charcoal) !important;
 }
 .momentum-dashboard-filter-button-wrapper {
-  color: #f78600 !important;
+  color: var(--flame) !important;
   display: flex;
   font-size: 0.9em;
   justify-content: flex-end;
   text-decoration: underline;
 }
 .momentum-dashboard-filter-button-wrapper:hover {
-  color: #f9991f !important;
+  color: var(--flame) !important;
 }
 .momentum-dashboard-see-all {
   display: flex;
   justify-content: center;
   padding: 12px;
   cursor: pointer;
-  border: 1px solid #fdbc4a !important;
+  border: 1px solid var(--med-light-mustard)!important;
   margin: 12px;
   border-radius: 8px;
-  background-color: #fdcd6c !important;
+  background-color: var(--light-mustard) !important;
   font-weight: 500 !important;
   width: calc(100% - 24px);
 }
 .momentum-dashboard-see-all:hover {
-  background-color: #fdcd6ccc !important;
+  background-color: var(--med-light-mustard) !important;
 }
 #momentum-dashboard-modal {
   background-color: rgb(0, 0, 0, 0.2);
@@ -183,7 +208,7 @@
   text-transform: uppercase;
 }
 .momentum-dashboard-research-item {
-  border-bottom: 1px solid #aaaaaa;
+  border-bottom: 1px solid var(--light-charcoal);
   padding: 0 0 16px 0;
   margin: 16px 0 0 0;
   word-break: break-word;
@@ -194,7 +219,7 @@
   padding-bottom: 2px;
 }
 #momentum-dashboard-modal a {
-  color: #f78600;
+  color: var(--flame);
 }
 .momentum-dashboard-research-outcomes-wrapper {
   margin: 8px 0 0;
@@ -221,7 +246,7 @@
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(4px);
   border-radius: 6px;
-  border: 0.5px solid #aaaaaa;
+  border: 0.5px solid var(--light-charcoal);
   font-size: 13px;
   padding: 6px;
   max-width: 200px;
