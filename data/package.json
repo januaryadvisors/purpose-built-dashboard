@@ -5,11 +5,13 @@
   "main": "index.js",
   "scripts": {
     "process-data": "node parseData.js",
+    "process-data-from-sheet": "node parseDataFromGoogleSheet.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
   "license": "UNLICENSED",
   "dependencies": {
-    "d3-dsv": "^3.0.1"
+    "d3-dsv": "^3.0.1",
+    "node-fetch": "^2.7.0"
   }
 }

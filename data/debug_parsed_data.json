@@ -1,0 +1,83 @@
+[
+  {
+    "Inputs": "Social Enterprise Restaurant\nCommunity Services Center (CSC)\nCommunity Partners + Resources\nThe Momentum Model\nInternship + Program Design\nHighly-Trained and Engaged Staff\nRestaurant Skills Certifications\nAssessments + Screening Tools\nPlaybook + Program Materials\nFunding\nSoftware + Technology\nTransportation\nEquipment, Tools + Goods",
+    "Strategy": "Basic needs resource navigation",
+    "Paragraph description": "Café Momentum connects interns to community resources and services that help meet their basic needs and establish a baseline of stability in their lives. \n\nResource and referral categories include housing, food assistance, health care, child care, government-issued or state identification, legal aid, substance abuse support, etc. This strategy also includes resource navigation education, critical document support, and providing interns with donated essential and personal care items.  \n",
+    "Output": "Referrals provided by category\nIDs obtained by youth",
+    "Immediate Outcomes <1year": "Increased access to basic needs\nIncreased access to basic needs",
+    "Intermediate Outcomes 1-5 years": "Increased ability to navigate and use services",
+    "Long-term Outcomes (5-10+ years)": "Improved well-being \nIncreased personal agency \nIncreased education attainment \nIncreased economic success \nAvoid further justice system involvement"
+  },
+  {
+    "Inputs": "",
+    "Strategy": "Mental health support",
+    "Paragraph description": "Café Momentum provides mental health and healing support to their interns through mental health meetings and service planning, as well as individual and group therapy sessions. To provide holistic and trauma-informed care, each intern also participates in a Adverse Childhood Experiences (ACEs) screening and a behavioral and emotional screening. ",
+    "Output": "Mental health service plans \nIndividual therapy sessions \nGroup therapy sessions \nBehavioral screenings \nACEs score (average)\nRestorative circles ",
+    "Immediate Outcomes <1year": "Improved social-emotional learning (SEL) skills \nImproved sense of belonging \nImproved interpersonal and planning skills",
+    "Intermediate Outcomes 1-5 years": "Increase in healthy relationships \nIncreased education attainment \nIncreased certification attainment ",
+    "Long-term Outcomes (5-10+ years)": ""
+  },
+  {
+    "Inputs": "",
+    "Strategy": "Life skills and personal development",
+    "Paragraph description": "Café Momentum supports life skills and personal development by providing interns with workshops on conflict management, financial education, sexual health and healthy relationships, transferable workplace skills, restaurant industry skills, personal development and more.\n\nInterns receive one-on-one support from a case manager to set personal goals and help monitor their completion of Café Momentum’s Tiers of Success.Through family visits, Café Momentum connects and promotes program awareness among interns’ family members. During this visit, case managers may also gain insights on intern and family needs. \n\nCafé Momentum also coordinates enrichment activities for youth that expand their cultural and community understandings. These include visiting museums, galleries, performances, historical sites and colleges.",
+    "Output": "Case management \nEnrichment activities \nTiers of Success completed \nWages earned on key learning activities (average) ",
+    "Immediate Outcomes <1year": "Improved social-emotional learning (SEL) skills \nImproved sense of belonging\nIncreased sense of belonging\nExpanded professional network  \nIncreased employability \n",
+    "Intermediate Outcomes 1-5 years": "Increase in healthy relationships\nIncreased social capital\nIncreased certification attainment \nEnrolled, employed, or enlisted after high school",
+    "Long-term Outcomes (5-10+ years)": ""
+  },
+  {
+    "Inputs": "",
+    "Strategy": "Educational enrichment",
+    "Paragraph description": "Once enrolled in the program, Café Momentum supports interns to ensure they are attending high school or the equivalent. This is a required part of their internship. Café Momentum supports academic progress by providing interns with education planning services, enrollment assistance, attendance tracking, tutoring, and post-secondary prep (e.g., test prep, college application support, scholarship and FAFSA support, interview prep, college tours, etc.). In some cities, interns can choose to attend Café Momentum Academy, an accredited online high school program.",
+    "Output": "Interns enrolled in high school or GED program (percentage of)\nInterns making academic progress \n",
+    "Immediate Outcomes <1year": "Academic progress \nAcademic progress ",
+    "Intermediate Outcomes 1-5 years": "Increased education attainment \nIncreased certification attainment \nDecrease in chronic absenteeism ",
+    "Long-term Outcomes (5-10+ years)": ""
+  },
+  {
+    "Inputs": "",
+    "Strategy": "Restaurant industry skill-building",
+    "Paragraph description": "Café Momentum trains interns in all nine stations of a fine-dining restaurant, both back and front of house. From this training, interns earn Café Momentum restaurant skills certifications and industry-recognized certifications (e.g., ServSafe Food Handlers).",
+    "Output": "ServSafe certifications \nStation certifications earned \nCafé Momentum skills certifications earned \nPaid hours\nWages earned on shift at Restaurant (average) ",
+    "Immediate Outcomes <1year": "Improved sense of belonging\nImproved interpersonal and planning skills \nIncreased employability ",
+    "Intermediate Outcomes 1-5 years": "Enrolled, employed, or enlisted after high school",
+    "Long-term Outcomes (5-10+ years)": ""
+  },
+  {
+    "Inputs": "",
+    "Strategy": "Job attainment support",
+    "Paragraph description": "Café Momentum promotes job attainment through career exploration activities such as informational interviews, job shadows, externships, etc. Interns also participate in job search workshops (e.g., resume drafting, interview training, professional communications, etc.) and receive one-on-one coaching. Café Momentum also coordinates professional networking opportunities for interns (e.g., guest speakers, tours, etc.) ",
+    "Output": "Externships completed \nJob shadows completed \nInformational interviews \nJobs attained \nStarting wage (average) \nProfessional connections ",
+    "Immediate Outcomes <1year": "Expanded professional network  \nImproved interpersonal and planning skills \nImproved sense of belonging",
+    "Intermediate Outcomes 1-5 years": "Increased social capital\nIncreased certification attainment \nEnrolled, employed, or enlisted after high school \n",
+    "Long-term Outcomes (5-10+ years)": ""
+  },
+  {
+    "Inputs": "",
+    "Strategy": "Life skills and personal development",
+    "Paragraph description": "Café Momentum provides all interns with violence prevention education, transportation planning, and de-escalation, conflict mediation and restorative practices.",
+    "Output": "Workshops attended \nBehavioral agreements/safety plans ",
+    "Immediate Outcomes <1year": "Improved interpersonal and planning skills \nImproved interpersonal and planning skills \nSense of safety at Café Momentum ",
+    "Intermediate Outcomes 1-5 years": "Increase in healthy relationships \nAvoid justice system involvement",
+    "Long-term Outcomes (5-10+ years)": ""
+  },
+  {
+    "Inputs": "",
+    "Strategy": "Exiting the justice system",
+    "Paragraph description": "Café Momentum assists interns with exiting the justice system. Activities include coordinating and monitoring community service or “Give Back Hours,” court and trial support, and staff relationship-building with probation officers. Café Momentum also provides transition planning and one-on-one case management support to ensure interns are meeting probation requirements. ",
+    "Output": "Youth in compliance with probation (percentage)\nYouth in alignment with restitution \nCommunity service hours completed\nStaff court appearances \nStaff-probation officer relationships ",
+    "Immediate Outcomes <1year": "Improved sense of belonging \nProgress towards justice system exit  ",
+    "Intermediate Outcomes 1-5 years": "Exit justice system ",
+    "Long-term Outcomes (5-10+ years)": ""
+  },
+  {
+    "Inputs": "",
+    "Strategy": "Post-internship planning and support ",
+    "Paragraph description": "Café Momentum maintains and strengthens connections with interns by providing post-internship planning and outreach and follow-up after program exit. Interns may continue to benefit from the program after exit by receiving referrals and job search assistance, and by attending community-building activities and events. ",
+    "Output": "Interns exiting program \nInterns enrolled in education program at exit \nInterns employed at exit \nPost-internship engagements \nReferrals provided \nCommunity-building activities and events ",
+    "Immediate Outcomes <1year": "Expanded professional network  \nIncreased sense of belonging\nIncreased access to basic needs",
+    "Intermediate Outcomes 1-5 years": "Increased social capital\nEnrolled, employed, or enlisted after high school\nIncreased certification attainment ",
+    "Long-term Outcomes (5-10+ years)": ""
+  }
+]

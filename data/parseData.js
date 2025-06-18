@@ -3,7 +3,7 @@ const fs = require('fs');
 const parse = async () => {
   const d3dsv = await import('d3-dsv');
 
-  const modelRaw = fs.readFileSync('./logic_model.csv', { encoding: 'utf8' });
+  const modelRaw = fs.readFileSync('./logic_model_expanded.csv', { encoding: 'utf8' });
   const researchRaw = fs.readFileSync('./research.csv', { encoding: 'utf8' });
   const headerTootipsRaw = fs.readFileSync('./header_tooltips.csv', { encoding: 'utf8' });
   const inputTooltipsRaw = fs.readFileSync('./input_tooltips.csv', { encoding: 'utf8' });
@@ -25,6 +25,7 @@ const parse = async () => {
   const inputTooltips = d3dsv.csvParse(inputTooltipsRaw);
 
   const inputs = getUnique(model, 'Inputs');
+  const partners = getUnique(model, 'Partners');
   const outputs = getUnique(model, 'Output');
   const immediateOutputs = getUnique(model, 'Immediate Outcomes');
   const intermediateOutputs = getUnique(model, 'Intermediate Outcomes');
@@ -45,6 +46,7 @@ const parse = async () => {
         ),
         // All long term outputs are associated with every strategy
         longTermOutputs: longTermOutputs.map((_, i) => i),
+        partners: arrayify(row.Partners).map(partner => partners.indexOf(partner)),
         research: [],
       },
     ]),
@@ -57,6 +59,7 @@ const parse = async () => {
       input => inputTooltips.find(t => t['Inputs Condensed'] === input)['Description'],
     ),
     strategies,
+    partners,
     outputs,
     immediateOutputs,
     intermediateOutputs,
@@ -95,7 +98,7 @@ const parse = async () => {
   Object.entries(data.strategies).forEach(([_, strategy], i) => {
     // Alphabetize research ignoring any leading smartquotes
     strategy.research.sort((a, b) => {
-      return a.citation.replace('“', '').localeCompare(b.citation.replace('“', ''));
+      return a.citation.replace('"', '').localeCompare(b.citation.replace('"', ''));
     });
   });
 
