@@ -25,6 +25,7 @@ const parse = async () => {
   const inputTooltips = d3dsv.csvParse(inputTooltipsRaw);
 
   const inputs = getUnique(model, 'Inputs');
+  const pbcComponents = getUnique(model, 'PBC Component');
   const partners = getUnique(model, 'Partners');
   const outputs = getUnique(model, 'Output');
   const immediateOutputs = getUnique(model, 'Immediate Outcomes');
@@ -46,6 +47,7 @@ const parse = async () => {
         ),
         // All long term outputs are associated with every strategy
         longTermOutputs: longTermOutputs.map((_, i) => i),
+        pbcComponents: arrayify(row['PBC Component']).map(pbcComponent => pbcComponents.indexOf(pbcComponent)),
         partners: arrayify(row.Partners).map(partner => partners.indexOf(partner)),
         research: [],
       },
@@ -58,6 +60,7 @@ const parse = async () => {
     inputTooltips: inputs.map(
       input => inputTooltips.find(t => t['Inputs Condensed'] === input)['Description'],
     ),
+    pbcComponents,
     strategies,
     partners,
     outputs,

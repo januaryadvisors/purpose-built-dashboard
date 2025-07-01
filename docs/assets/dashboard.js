@@ -59,6 +59,7 @@ window.onload = async function () {
   const dashboard = document.getElementById(namespace);
 
   const inputId = `${namespace}-input`;
+  const pbcComponentsId = `${namespace}-pbc-components`;
   const partnersId = `${namespace}-partners`;
   const strategiesId = `${namespace}-strategies`;
   const outputsId = `${namespace}-outputs`;
@@ -70,25 +71,44 @@ window.onload = async function () {
 
   const dashboardWrapper = addElement(dashboard, 'div', 'body-wrapper');
   
-  // Add controls section for the checkbox
+  // Add controls section for the checkboxes
   const controlsWrapper = addElement(dashboardWrapper, 'div', 'controls-wrapper');
   controlsWrapper.style.marginBottom = '20px';
   controlsWrapper.style.padding = '10px';
   controlsWrapper.style.backgroundColor = '#f5f5f5';
   controlsWrapper.style.borderRadius = '5px';
+  controlsWrapper.style.display = 'flex';
+  controlsWrapper.style.gap = '20px';
+  controlsWrapper.style.flexWrap = 'wrap';
   
-  const checkboxLabel = addElement(controlsWrapper, 'label');
-  checkboxLabel.style.display = 'flex';
-  checkboxLabel.style.alignItems = 'center';
-  checkboxLabel.style.gap = '8px';
-  checkboxLabel.style.fontSize = '14px';
+  // Partners checkbox
+  const partnersCheckboxLabel = addElement(controlsWrapper, 'label');
+  partnersCheckboxLabel.style.display = 'flex';
+  partnersCheckboxLabel.style.alignItems = 'center';
+  partnersCheckboxLabel.style.gap = '8px';
+  partnersCheckboxLabel.style.fontSize = '14px';
   
-  const checkbox = addElement(checkboxLabel, 'input');
-  checkbox.type = 'checkbox';
-  checkbox.id = `${namespace}-hide-partners`;
+  const partnersCheckbox = addElement(partnersCheckboxLabel, 'input');
+  partnersCheckbox.type = 'checkbox';
+  partnersCheckbox.id = `${namespace}-hide-partners`;
   
-  const checkboxText = addElement(checkboxLabel, 'span');
-  checkboxText.textContent = 'Hide Partners Column';
+  const partnersCheckboxText = addElement(partnersCheckboxLabel, 'span');
+  partnersCheckboxText.textContent = 'Hide Partners Column';
+  
+  // PBC Components checkbox
+  const pbcCheckboxLabel = addElement(controlsWrapper, 'label');
+  pbcCheckboxLabel.style.display = 'flex';
+  pbcCheckboxLabel.style.alignItems = 'center';
+  pbcCheckboxLabel.style.gap = '8px';
+  pbcCheckboxLabel.style.fontSize = '14px';
+  
+  const pbcCheckbox = addElement(pbcCheckboxLabel, 'input');
+  pbcCheckbox.type = 'checkbox';
+  pbcCheckbox.id = `${namespace}-hide-pbc-components`;
+  pbcCheckbox.checked = true;
+  
+  const pbcCheckboxText = addElement(pbcCheckboxLabel, 'span');
+  pbcCheckboxText.textContent = 'Hide PBC Components Column';
   
   const headersWrapper = addElement(dashboardWrapper, 'div', 'header-wrapper');
   const columnsWrapper = addElement(dashboardWrapper, 'div', 'columns-wrapper');
@@ -98,10 +118,69 @@ window.onload = async function () {
   // Holds whether or not a strategy has been clicked
   let clickedStrategy = false;
 
+  // Function to trigger Partner button clicks based on selected PBC Components
+  const triggerPartnerCascadeFromPBC = () => {
+    const pbcHorizontalBar = document.getElementById(`${namespace}-horizontal-pbcComponents`);
+    const partnersHorizontalBar = document.getElementById(`${namespace}-horizontal-partners`);
+    
+    if (!pbcHorizontalBar || !partnersHorizontalBar) {
+      console.log('❌ Missing horizontal bars for cascade');
+      return;
+    }
+    
+    // Get currently selected PBC Components by checking CSS classes
+    const selectedPBCComponents = new Set();
+    const pbcButtons = pbcHorizontalBar.querySelectorAll('div.selected');
+    pbcButtons.forEach(button => {
+      selectedPBCComponents.add(button.textContent);
+    });
+    
+    console.log(`📋 Currently selected PBC Components: [${Array.from(selectedPBCComponents).join(', ')}]`);
+    
+    // Find all partners that should be selected based on selected PBC Components
+    const partnersToSelect = new Set();
+    if (selectedPBCComponents.size > 0) {
+      // Go through strategies to find which partners are connected to selected PBC Components
+      Object.values(data.strategies).forEach(strategy => {
+        const strategyPBCComponents = strategy.pbcComponents ? strategy.pbcComponents.map(idx => data.pbcComponents[idx]) : [];
+        const hasSelectedPBC = strategyPBCComponents.some(pbc => selectedPBCComponents.has(pbc));
+        
+        if (hasSelectedPBC) {
+          // Add all partners from this strategy
+          const strategyPartners = strategy.partners ? strategy.partners.map(idx => data.partners[idx]) : [];
+          strategyPartners.forEach(partner => partnersToSelect.add(partner));
+        }
+      });
+    }
+    
+    console.log(`🤝 Partners that should be selected: [${Array.from(partnersToSelect).join(', ')}]`);
+    
+    // Get all Partner buttons and determine which ones need to be clicked
+    const partnerButtons = partnersHorizontalBar.querySelectorAll('div[style*="rgb"]');
+    partnerButtons.forEach(button => {
+      const partnerName = button.textContent;
+      const shouldBeSelected = partnersToSelect.has(partnerName);
+      const isCurrentlySelected = button.classList.contains('selected');
+      
+      console.log(`🔍 Partner "${partnerName}": shouldBe=${shouldBeSelected}, currently=${isCurrentlySelected}`);
+      
+      // Only trigger click if the state needs to change
+      if (shouldBeSelected && !isCurrentlySelected) {
+        // Need to select this partner
+        console.log(`👆 Clicking to SELECT partner: ${partnerName}`);
+        button.click();
+      } else if (!shouldBeSelected && isCurrentlySelected) {
+        // Need to deselect this partner
+        console.log(`👆 Clicking to DESELECT partner: ${partnerName}`);
+        button.click();
+      }
+    });
+  };
+
   const columns = {
-    [inputId]: {
+    [pbcComponentsId]: {
       columnColor: brandGradient[0],
-      label: 'Inputs',
+      label: 'PBC Components',
     },
     [partnersId]: {
       columnColor: brandGradient[1],
@@ -129,34 +208,37 @@ window.onload = async function () {
     },
   };
 
-  // Function to toggle partners column visibility
-  const togglePartnersColumn = (hidePartners) => {
-    // Find the partners header by looking for the header with "Partners" text
+  // Generic function to toggle column visibility
+  const toggleColumn = (columnId, columnLabel, dataKey, colorIndex, hideColumn) => {
+    // Find the column header by looking for the header with the specified label
     const allHeaders = document.querySelectorAll(`.${namespace}-header`);
-    const partnersHeader = Array.from(allHeaders).find(header => 
-      header.querySelector('h2') && header.querySelector('h2').textContent.includes('Partners')
+    const columnHeader = Array.from(allHeaders).find(header => 
+      header.querySelector('h2') && header.querySelector('h2').textContent.includes(columnLabel)
     );
-    const partnersColumn = document.getElementById(partnersId);
+    const column = document.getElementById(columnId);
     
-    // Check if horizontal partners bar already exists
-    let horizontalPartnersBar = document.getElementById(`${namespace}-horizontal-partners`);
+    // Check if horizontal bar already exists
+    let horizontalBar = document.getElementById(`${namespace}-horizontal-${dataKey}`);
     
-    // Track selected partners for filtering
-    let selectedPartners = new Set();
+    // Track selected items for filtering
+    let selectedItems = new Set();
     
-    // Function to filter strategies based on selected partners
-    const filterStrategiesByPartners = () => {
+    // Function to filter strategies based on selected items
+    const filterStrategiesByItems = () => {
       const strategiesColumn = document.getElementById(strategiesId);
       const strategiesChildren = strategiesColumn.getElementsByClassName(`${namespace}-data-wrapper`);
       
-      if (selectedPartners.size === 0) {
-        // Show all strategies if no partners selected
+      console.log(`🔄 Filtering strategies for ${dataKey}, selectedItems:`, Array.from(selectedItems));
+      
+      if (selectedItems.size === 0) {
+        console.log(`📄 No items selected for ${dataKey}, showing all strategies`);
+        // Show all strategies if no items selected
         [...strategiesChildren].forEach(child => {
           child.style.display = 'block';
         });
         
         // Show all items in other columns
-        const allColumns = [outputsId, immediateOutputsId, intermediateOutputsId, longTermOutputsId];
+        const allColumns = [partnersId, outputsId, immediateOutputsId, intermediateOutputsId, longTermOutputsId];
         allColumns.forEach(columnId => {
           const column = document.getElementById(columnId);
           if (column) {
@@ -171,10 +253,10 @@ window.onload = async function () {
         const visibleStrategies = [];
         [...strategiesChildren].forEach((child, idx) => {
           const strategy = strategyValues[idx];
-          const strategyPartners = strategy.partners.map(partnerIdx => data.partners[partnerIdx]);
-          const hasSelectedPartner = strategyPartners.some(partner => selectedPartners.has(partner));
+          const strategyItems = strategy[dataKey] ? strategy[dataKey].map(itemIdx => data[dataKey][itemIdx]) : [];
+          const hasSelectedItem = strategyItems.some(item => selectedItems.has(item));
           
-          if (hasSelectedPartner) {
+          if (hasSelectedItem) {
             visibleStrategies.push(strategy);
             child.style.display = 'block';
           } else {
@@ -199,103 +281,144 @@ window.onload = async function () {
               return strategyItems && strategyItems.includes(idx);
             });
             
-            child.style.display = isConnected ? 'block' : 'none';
-          });
-        };
+                      child.style.display = isConnected ? 'block' : 'none';
+        });
+      };
         
         // Filter each column
         filterColumnByStrategies(outputsId, 'outputs');
         filterColumnByStrategies(immediateOutputsId, 'immediateOutputs');
         filterColumnByStrategies(intermediateOutputsId, 'intermediateOutputs');
         filterColumnByStrategies(longTermOutputsId, 'longTermOutputs');
+        
+        // Always filter Partners column based on visible strategies
+        if (dataKey === 'pbcComponents') {
+          // When filtering by PBC Components, filter Partners based on the strategies that are visible
+          const partnersColumn = document.getElementById(partnersId);
+          if (partnersColumn) {
+            const partnersChildren = partnersColumn.getElementsByClassName(`${namespace}-data-wrapper`);
+            console.log(`🤝 Filtering Partners column based on PBC Components`);
+            
+            [...partnersChildren].forEach((child, idx) => {
+              const partner = data.partners[idx];
+              
+              // Check if this partner is connected to any visible strategy
+              const isConnectedToPBCComponent = visibleStrategies.some(strategy => {
+                return strategy.partners && strategy.partners.includes(idx);
+              });
+              
+              child.style.display = isConnectedToPBCComponent ? 'block' : 'none';
+              console.log(`🤝 Partner "${partner}" connected to PBC strategies: ${isConnectedToPBCComponent}`);
+            });
+          }
+        } else {
+          // For other filtering types, filter Partners normally
+          filterColumnByStrategies(partnersId, 'partners');
+        }
       }
     };
     
-    if (hidePartners) {
-      // Hide partners column
-      if (partnersHeader) partnersHeader.style.display = 'none';
-      if (partnersColumn) partnersColumn.style.display = 'none';
+    if (hideColumn) {
+      // Hide column
+      if (columnHeader) columnHeader.style.display = 'none';
+      if (column) column.style.display = 'none';
       
-      // Create horizontal partners bar if it doesn't exist
-      if (!horizontalPartnersBar) {
-        horizontalPartnersBar = addElement(dashboard, 'div', 'horizontal-partners');
-        horizontalPartnersBar.style.display = 'flex';
-        horizontalPartnersBar.style.flexWrap = 'wrap';
-        horizontalPartnersBar.style.gap = '10px';
-        horizontalPartnersBar.style.padding = '15px';
-        horizontalPartnersBar.style.backgroundColor = brandGradient[1] + '1A';
-        horizontalPartnersBar.style.border = `2px solid ${brandGradient[1]}80`;
-        horizontalPartnersBar.style.borderRadius = '8px';
-        horizontalPartnersBar.style.marginBottom = '20px';
+      // Create horizontal bar if it doesn't exist
+      if (!horizontalBar) {
+        horizontalBar = addElement(dashboard, 'div', `horizontal-${dataKey}`);
+        horizontalBar.style.display = 'flex';
+        horizontalBar.style.flexWrap = 'wrap';
+        horizontalBar.style.gap = '10px';
+        horizontalBar.style.padding = '15px';
+        horizontalBar.style.backgroundColor = brandGradient[colorIndex] + '1A';
+        horizontalBar.style.border = `2px solid ${brandGradient[colorIndex]}80`;
+        horizontalBar.style.borderRadius = '8px';
+        horizontalBar.style.marginBottom = '20px';
         
         // Add title
-        const titleDiv = addElement(horizontalPartnersBar, 'div');
+        const titleDiv = addElement(horizontalBar, 'div');
         titleDiv.style.fontWeight = 'bold';
         titleDiv.style.marginBottom = '10px';
         titleDiv.style.width = '100%';
-        titleDiv.style.color = brandGradient[1];
-        titleDiv.textContent = 'Partners (click to filter strategies):';
+        titleDiv.style.color = brandGradient[colorIndex];
+        titleDiv.textContent = `${columnLabel} (click to filter strategies):`;
         
-        // Add partners as clickable toggle buttons
-        data.partners.forEach(partner => {
-          const partnerDiv = addElement(horizontalPartnersBar, 'div');
-          partnerDiv.style.padding = '8px 12px';
-          partnerDiv.style.backgroundColor = brandGradient[1] + '20';
-          partnerDiv.style.border = `1px solid ${brandGradient[1]}60`;
-          partnerDiv.style.borderRadius = '4px';
-          partnerDiv.style.fontSize = '14px';
-          partnerDiv.style.color = brandGradient[1];
-          partnerDiv.style.cursor = 'pointer';
-          partnerDiv.style.transition = 'all 0.2s ease';
-          partnerDiv.textContent = partner;
+        // Add items as clickable toggle buttons
+        data[dataKey].forEach(item => {
+          const itemDiv = addElement(horizontalBar, 'div');
+          itemDiv.style.padding = '8px 12px';
+          itemDiv.style.backgroundColor = brandGradient[colorIndex] + '20';
+          itemDiv.style.border = `1px solid ${brandGradient[colorIndex]}60`;
+          itemDiv.style.borderRadius = '4px';
+          itemDiv.style.fontSize = '14px';
+          itemDiv.style.color = brandGradient[colorIndex];
+          itemDiv.style.cursor = 'pointer';
+          itemDiv.style.transition = 'all 0.2s ease';
+          itemDiv.textContent = item;
           
           // Add click functionality
-          partnerDiv.addEventListener('click', () => {
-            if (selectedPartners.has(partner)) {
-              // Deselect partner
-              selectedPartners.delete(partner);
-              partnerDiv.style.backgroundColor = brandGradient[1] + '20';
-              partnerDiv.style.border = `1px solid ${brandGradient[1]}60`;
+          itemDiv.addEventListener('click', () => {
+            if (selectedItems.has(item)) {
+              // Deselect item
+              selectedItems.delete(item);
+              itemDiv.style.backgroundColor = brandGradient[colorIndex] + '20';
+              itemDiv.style.border = `1px solid ${brandGradient[colorIndex]}60`;
+              itemDiv.classList.remove('selected');
+              console.log(`🔴 Deselected ${dataKey}: ${item}`);
             } else {
-              // Select partner
-              selectedPartners.add(partner);
-              partnerDiv.style.backgroundColor = brandGradient[1] + '60';
-              partnerDiv.style.border = `2px solid ${brandGradient[1]}`;
+              // Select item
+              selectedItems.add(item);
+              itemDiv.style.backgroundColor = brandGradient[colorIndex] + '60';
+              itemDiv.style.border = `2px solid ${brandGradient[colorIndex]}`;
+              itemDiv.classList.add('selected');
+              console.log(`🟢 Selected ${dataKey}: ${item}`);
             }
-            filterStrategiesByPartners();
+            filterStrategiesByItems();
+            
+            // Cascading filter: If we're filtering PBC Components and Partners column is also hidden,
+            // trigger corresponding Partner button clicks
+            if (dataKey === 'pbcComponents') {
+              const partnersHorizontalBar = document.getElementById(`${namespace}-horizontal-partners`);
+              if (partnersHorizontalBar && partnersHorizontalBar.style.display !== 'none') {
+                // Partners column is also hidden, so trigger cascading
+                console.log('🔄 Triggering Partner cascade from PBC Components');
+                triggerPartnerCascadeFromPBC();
+              }
+            }
+            // Note: We intentionally don't cascade from Partners to PBC Components (one-way only)
           });
           
           // Add hover effects
-          partnerDiv.addEventListener('mouseenter', () => {
-            if (!selectedPartners.has(partner)) {
-              partnerDiv.style.backgroundColor = brandGradient[1] + '40';
+          itemDiv.addEventListener('mouseenter', () => {
+            if (!selectedItems.has(item)) {
+              itemDiv.style.backgroundColor = brandGradient[colorIndex] + '40';
             }
           });
           
-          partnerDiv.addEventListener('mouseleave', () => {
-            if (!selectedPartners.has(partner)) {
-              partnerDiv.style.backgroundColor = brandGradient[1] + '20';
+          itemDiv.addEventListener('mouseleave', () => {
+            if (!selectedItems.has(item)) {
+              itemDiv.style.backgroundColor = brandGradient[colorIndex] + '20';
             }
           });
         });
         
-        // Insert the horizontal partners bar before the dashboardWrapper
-        dashboard.insertBefore(horizontalPartnersBar, dashboardWrapper);
+        // Insert the horizontal bar before the dashboardWrapper
+        dashboard.insertBefore(horizontalBar, dashboardWrapper);
       } else {
-        horizontalPartnersBar.style.display = 'flex';
+        horizontalBar.style.display = 'flex';
       }
     } else {
-      // Show partners column
-      if (partnersHeader) partnersHeader.style.display = 'flex';
-      if (partnersColumn) partnersColumn.style.display = 'block';
+      // Show column
+      if (columnHeader) columnHeader.style.display = 'flex';
+      if (column) column.style.display = 'block';
       
-      // Hide horizontal partners bar
-      if (horizontalPartnersBar) {
-        horizontalPartnersBar.style.display = 'none';
+      // Hide horizontal bar
+      if (horizontalBar) {
+        horizontalBar.style.display = 'none';
       }
       
-      // Clear any partner filtering when showing the column
-      selectedPartners.clear();
+      // Clear any filtering when showing the column
+      selectedItems.clear();
       const strategiesColumn = document.getElementById(strategiesId);
       if (strategiesColumn) {
         const strategiesChildren = strategiesColumn.getElementsByClassName(`${namespace}-data-wrapper`);
@@ -303,12 +426,28 @@ window.onload = async function () {
           child.style.display = 'block';
         });
       }
+      
+      // Show all items in other columns
+      const allColumns = [partnersId, outputsId, immediateOutputsId, intermediateOutputsId, longTermOutputsId];
+      allColumns.forEach(columnId => {
+        const column = document.getElementById(columnId);
+        if (column) {
+          const columnChildren = column.getElementsByClassName(`${namespace}-data-wrapper`);
+          [...columnChildren].forEach(child => {
+            child.style.display = 'block';
+          });
+        }
+      });
     }
   };
 
-  // Add event listener to checkbox
-  checkbox.addEventListener('change', (e) => {
-    togglePartnersColumn(e.target.checked);
+  // Add event listeners for checkboxes
+  partnersCheckbox.addEventListener('change', (e) => {
+    toggleColumn(partnersId, 'Partners', 'partners', 1, e.target.checked);
+  });
+  
+  pbcCheckbox.addEventListener('change', (e) => {
+    toggleColumn(pbcComponentsId, 'PBC Components', 'pbcComponents', 0, e.target.checked);
   });
 
   // Create our modal element
@@ -515,6 +654,14 @@ window.onload = async function () {
         fetchCSV(CONFIG.SHEET_GIDS.input_tooltips)
       ]);
 
+      console.log('🔍 RAW DATA FROM LOGIC MODEL EXPANDED SHEET:');
+      console.log('📄 First 1000 characters:', modelRaw.substring(0, 1000));
+      console.log('📊 Total length:', modelRaw.length);
+      console.log('📋 First 5 lines:');
+      modelRaw.split('\n').slice(0, 5).forEach((line, i) => {
+        console.log(`Line ${i + 1}:`, line);
+      });
+
       // Improved CSV parser to handle multiline fields
       const parseCSV = (csvText) => {
         const rows = [];
@@ -605,6 +752,28 @@ window.onload = async function () {
       const headerTooltips = parseCSVRows(headerTooltipsRaw);
       const inputTooltips = parseCSV(inputTooltipsRaw);
 
+      console.log('🗃️ PARSED LOGIC MODEL DATA:');
+      console.log('📝 Number of rows:', model.length);
+      console.log('🏷️ Column headers:', Object.keys(model[0] || {}));
+      console.log('📋 First 3 rows of parsed data:');
+      model.slice(0, 3).forEach((row, i) => {
+        console.log(`Row ${i + 1}:`, row);
+      });
+      
+      // Check specifically for PBC Components column
+      if (model.length > 0) {
+        const hasePBCColumn = Object.keys(model[0]).find(key => 
+          key.toLowerCase().includes('pbc') || key.toLowerCase().includes('component')
+        );
+        console.log('🔍 PBC Components column found:', hasePBCColumn);
+        if (hasePBCColumn) {
+          console.log('📊 PBC Components sample values:');
+          model.slice(0, 5).forEach((row, i) => {
+            console.log(`  Row ${i + 1} PBC:`, row[hasePBCColumn]);
+          });
+        }
+      }
+
       // Helper functions from parseData.js
       const arrayify = multilineRow => {
         return multilineRow
@@ -619,11 +788,17 @@ window.onload = async function () {
 
       // Extract unique values
       const inputs = getUnique(model, 'Inputs');
+      const pbcComponents = getUnique(model, 'PBC Component');
       const partners = getUnique(model, 'Partners');
       const outputs = getUnique(model, 'Output');
       const immediateOutputs = getUnique(model, 'Immediate Outcomes');
       const intermediateOutputs = getUnique(model, 'Intermediate Outcomes');
       const longTermOutputs = getUnique(model, 'Long-term Outcomes');
+
+      console.log('🔍 EXTRACTED UNIQUE VALUES:');
+      console.log('📊 PBC Components:', pbcComponents);
+      console.log('👥 Partners:', partners);
+      console.log('🎯 Strategies count:', model.length);
 
       // Build strategies object
       const strategies = Object.fromEntries(
@@ -642,16 +817,14 @@ window.onload = async function () {
             // All long term outputs are associated with every strategy
             longTermOutputs: longTermOutputs.map((_, i) => i),
             partners: arrayify(row.Partners).map(partner => partners.indexOf(partner)),
+            pbcComponents: arrayify(row['PBC Component'] || '').map(component => pbcComponents.indexOf(component)),
             research: [],
           },
         ]),
       );
 
       // Process research data with safety checks
-      console.log('📚 Processing research data, count:', research.length);
-      research.forEach((r, index) => {
-        console.log(`📝 Processing research item ${index}:`, r);
-        
+      research.forEach((r, index) => {        
         // Safety checks for required fields
         if (!r.Strategy) {
           console.log(`⚠️ Skipping research item ${index} - missing Strategy`);
@@ -688,11 +861,9 @@ window.onload = async function () {
         );
         if (!match) {
           strategies[researchStrategy].research.push(researchDatum);
-          console.log(`✅ Added research to ${researchStrategy}`);
         } else {
           if (!match.relatedOutcomes.includes(relatedOutcome)) {
             match.relatedOutcomes.push(relatedOutcome);
-            console.log(`📝 Added outcome to existing research in ${researchStrategy}`);
           }
         }
       });
@@ -703,9 +874,6 @@ window.onload = async function () {
           return a.citation.replace('"', '').localeCompare(b.citation.replace('"', ''));
         });
       });
-      console.log('//////')
-      console.log(inputTooltips)
-      console.log('//////')
       // Build final data object
       data = {
         headerTooltips: headerTooltips.map(t => t[1]),
@@ -714,6 +882,7 @@ window.onload = async function () {
           const tooltip = inputTooltips.find(t => t['Inputs Condensed'] === input);
           return tooltip ? (tooltip['Description'] || input) : input;
         }),
+        pbcComponents,
         strategies,
         partners,
         outputs,
@@ -721,6 +890,10 @@ window.onload = async function () {
         intermediateOutputs,
         longTermOutputs,
       };
+
+      console.log('🎯 FINAL DATA OBJECT:');
+      console.log('📊 PBC Components in data:', data.pbcComponents);
+      console.log('🏗️ Sample strategy with PBC mapping:', Object.values(data.strategies)[0]);
 
       console.log('Data loaded from Google Sheets:', data);
       
@@ -815,16 +988,16 @@ window.onload = async function () {
     if (clickedStrategy) {
       return;
     }
+    highlightColumn(strategyValues[i], 'pbcComponents', pbcComponentsId);
     highlightColumn(strategyValues[i], 'partners', partnersId);
     highlightColumn(strategyValues[i], 'outputs', outputsId);
     highlightColumn(strategyValues[i], 'immediateOutputs', immediateOutputsId);
     highlightColumn(strategyValues[i], 'intermediateOutputs', intermediateOutputsId);
-    highlightColumn(strategyValues[i], 'longTermOutputs', longTermOutputsId);
   };
 
   const unfilterColumns = () => {
     clickedStrategy = false;
-    [strategiesId, outputsId, immediateOutputsId, intermediateOutputsId].forEach(columnId => {
+    [pbcComponentsId, partnersId, strategiesId, outputsId, immediateOutputsId, intermediateOutputsId, longTermOutputsId].forEach(columnId => {
       const column = document.getElementById(columnId);
       const columnChildren = column.getElementsByClassName(`${namespace}-data-wrapper`);
       [...columnChildren].forEach(child => {
@@ -868,6 +1041,7 @@ window.onload = async function () {
       });
     };
 
+    filterColumn(strategyValues[i], 'pbcComponents', pbcComponentsId);
     filterColumn(strategyValues[i], 'partners', partnersId);
     filterColumn(strategyValues[i], 'outputs', outputsId);
     filterColumn(strategyValues[i], 'immediateOutputs', immediateOutputsId);
@@ -929,7 +1103,11 @@ window.onload = async function () {
           strategyValues.forEach((strategy, strategyIdx) => {
             let isConnected = false;
             
-            if (columnId === outputsId && strategy.outputs.includes(i)) {
+            if (columnId === pbcComponentsId && strategy.pbcComponents.includes(i)) {
+              isConnected = true;
+            } else if (columnId === partnersId && strategy.partners.includes(i)) {
+              isConnected = true;
+            } else if (columnId === outputsId && strategy.outputs.includes(i)) {
               isConnected = true;
             } else if (columnId === immediateOutputsId && strategy.immediateOutputs.includes(i)) {
               isConnected = true;
@@ -981,6 +1159,8 @@ window.onload = async function () {
           };
           
           // Highlight related items in all other columns
+          if (columnId !== pbcComponentsId) highlightRelatedItems(pbcComponentsId, 'pbcComponents');
+          if (columnId !== partnersId) highlightRelatedItems(partnersId, 'partners');
           if (columnId !== outputsId) highlightRelatedItems(outputsId, 'outputs');
           if (columnId !== immediateOutputsId) highlightRelatedItems(immediateOutputsId, 'immediateOutputs');
           if (columnId !== intermediateOutputsId) highlightRelatedItems(intermediateOutputsId, 'intermediateOutputs');
@@ -994,7 +1174,7 @@ window.onload = async function () {
           textDiv.style.background = 'transparent';
           
           // Remove highlights from all columns manually
-          const allColumns = [strategiesId, outputsId, immediateOutputsId, intermediateOutputsId, longTermOutputsId];
+          const allColumns = [pbcComponentsId, partnersId, strategiesId, outputsId, immediateOutputsId, intermediateOutputsId, longTermOutputsId];
           allColumns.forEach(columnId => {
             const column = document.getElementById(columnId);
             if (column) {
@@ -1015,7 +1195,7 @@ window.onload = async function () {
   const strategiesColumn = document.getElementById(strategiesId);
   const seeAllButton = document.createElement('button');
 
-  addDataToColumn(data.inputs, inputId, data.inputTooltips);
+  addDataToColumn(data.pbcComponents, pbcComponentsId);
   addDataToColumn(data.partners, partnersId);
   addDataToColumn(Object.keys(data.strategies), strategiesId);
 
@@ -1029,6 +1209,9 @@ window.onload = async function () {
   addDataToColumn(data.immediateOutputs, immediateOutputsId);
   addDataToColumn(data.intermediateOutputs, intermediateOutputsId);
   addDataToColumn(data.longTermOutputs, longTermOutputsId);
+
+  // Trigger PBC Components to be hidden by default
+  toggleColumn(pbcComponentsId, 'PBC Components', 'pbcComponents', 0, true);
 
   const addFooter = () => {
     const footer = addElement(dashboard, 'div', 'footer');
