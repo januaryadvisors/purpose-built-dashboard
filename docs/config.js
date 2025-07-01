@@ -18,8 +18,8 @@ window.DASHBOARD_CONFIG = {
   GOOGLE_SHEET_ID: '1xMLrp1nNKhQeHAnBdN-BpDdjVj_uuLIV06hKPe8wtBk',
   
   SHEET_GIDS: {
-    logic_model_expanded: '1482534373',  // Logic model Expanded sheet
-    research: '1030263523',              // Use same sheet for now (no research data)
+    logic_model_expanded: '1442531113',  // Logic model Expanded sheet
+    research: '477836847',              // Use same sheet for now (no research data)
     header_tooltips: '459672780',       // Use same sheet for now  
     input_tooltips: '304412178'         // Use same sheet for now
   },
