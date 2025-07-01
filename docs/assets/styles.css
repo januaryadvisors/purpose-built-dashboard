@@ -251,6 +251,123 @@
   max-width: 200px;
 }
 
+/* Filter button states */
+.momentum-dashboard-filter-button {
+  padding: 8px 12px;
+  border-radius: 4px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 1px solid transparent;
+}
+
+/* PBC Component filter buttons */
+.momentum-dashboard-filter-button.pbc-economic-vitality {
+  background-color: #7B8FC520;
+  border-color: #7B8FC560;
+  color: #7B8FC5;
+}
+
+.momentum-dashboard-filter-button.pbc-economic-vitality:hover {
+  background-color: #7B8FC540;
+}
+
+.momentum-dashboard-filter-button.pbc-economic-vitality.selected {
+  background-color: #7B8FC5;
+  border-color: #7B8FC5;
+  color: #333;
+  border-width: 2px;
+}
+
+.momentum-dashboard-filter-button.pbc-education {
+  background-color: #7ED7A220;
+  border-color: #7ED7A260;
+  color: #7ED7A2;
+}
+
+.momentum-dashboard-filter-button.pbc-education:hover {
+  background-color: #7ED7A240;
+}
+
+.momentum-dashboard-filter-button.pbc-education.selected {
+  background-color: #7ED7A2;
+  border-color: #7ED7A2;
+  color: #333;
+  border-width: 2px;
+}
+
+.momentum-dashboard-filter-button.pbc-community-vibrancy {
+  background-color: #E5B8A020;
+  border-color: #E5B8A060;
+  color: #E5B8A0;
+}
+
+.momentum-dashboard-filter-button.pbc-community-vibrancy:hover {
+  background-color: #E5B8A040;
+}
+
+.momentum-dashboard-filter-button.pbc-community-vibrancy.selected {
+  background-color: #E5B8A0;
+  border-color: #E5B8A0;
+  color: #333;
+  border-width: 2px;
+}
+
+/* Partner filter buttons - default state */
+.momentum-dashboard-filter-button.partner-button {
+  background-color: #E1B04720;
+  border-color: #E1B04760;
+  color: #E1B047;
+}
+
+.momentum-dashboard-filter-button.partner-button:hover {
+  background-color: #E1B04740;
+}
+
+.momentum-dashboard-filter-button.partner-button.selected {
+  background-color: #E1B04760;
+  border-color: #E1B047;
+  border-width: 2px;
+}
+
+/* Partner button PBC color combinations */
+.momentum-dashboard-filter-button.partner-button.pbc-economic-vitality {
+  background-color: #7B8FC5;
+  border-color: #7B8FC5;
+  color: #333;
+  border-width: 2px;
+}
+
+.momentum-dashboard-filter-button.partner-button.pbc-education {
+  background-color: #7ED7A2;
+  border-color: #7ED7A2;
+  color: #333;
+  border-width: 2px;
+}
+
+.momentum-dashboard-filter-button.partner-button.pbc-community-vibrancy {
+  background-color: #E5B8A0;
+  border-color: #E5B8A0;
+  color: #333;
+  border-width: 2px;
+}
+
+/* Multiple PBC Component gradients for partner buttons */
+.momentum-dashboard-filter-button.partner-button.pbc-economic-vitality.pbc-education {
+  background: linear-gradient(90deg, #7B8FC5 50%, #7ED7A2 50%);
+  border-color: #7B8FC5;
+}
+
+.momentum-dashboard-filter-button.partner-button.pbc-economic-vitality.pbc-community-vibrancy {
+  background: linear-gradient(90deg, #7B8FC5 50%, #E5B8A0 50%);
+  border-color: #7B8FC5;
+}
+
+.momentum-dashboard-filter-button.partner-button.pbc-education.pbc-community-vibrancy {
+  background: linear-gradient(90deg, #7ED7A2 50%, #E5B8A0 50%);
+  border-color: #7ED7A2;
+}
+
 @media screen and (max-width: 1280px) {
   #momentum-dashboard {
     padding: 48px 24px;

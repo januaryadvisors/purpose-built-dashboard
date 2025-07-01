@@ -127,10 +127,15 @@ window.onload = async function () {
 
   // Function to get PBC Component color
   const getPBCColor = (pbcComponent) => {
-    return pbcColors[pbcComponent] || brandGradient[0]; // fallback to default color
+    const pbcColors = {
+      'Economic Vitality': '#7B8FC5',
+      'Education': '#7ED7A2', 
+      'Community Vibrancy': '#E5B8A0'
+    };
+    return pbcColors[pbcComponent] || '#E1B047'; // Default to mustard if not found
   };
 
-  // Function to blend two hex colors (alternative to half-half split)
+    // Function to blend two hex colors (alternative to half-half split)
   const blendColors = (color1, color2) => {
     // Remove # if present
     color1 = color1.replace('#', '');
@@ -186,12 +191,17 @@ window.onload = async function () {
           strategyPartners.forEach(partner => partnersToSelect.add(partner));
         }
       });
+    } else {
+      // No PBC Components selected - clear all Partner button selections
+      console.log('🧹 No PBC Components selected, clearing all Partner buttons');
+      clearPartnerButtonSelections();
+      return; // Exit early since we just need to clear everything
     }
     
     console.log(`🤝 Partners that should be selected: [${Array.from(partnersToSelect).join(', ')}]`);
     
     // Get all Partner buttons and determine which ones need to be clicked
-    const partnerButtons = partnersHorizontalBar.querySelectorAll('div[style*="rgb"]');
+    const partnerButtons = partnersHorizontalBar.querySelectorAll('div.partner-button');
     partnerButtons.forEach(button => {
       const partnerName = button.textContent;
       const shouldBeSelected = partnersToSelect.has(partnerName);
@@ -238,38 +248,26 @@ window.onload = async function () {
     });
   };
 
-  // Function to apply PBC Component colors to Partner buttons
+  // Function to apply PBC Component colors to Partner buttons using CSS classes
   const applyPartnerColors = (partnerButton, connectedPBCs) => {
     if (connectedPBCs.length === 0) return;
     
     console.log(`🎨 Applying colors to partner "${partnerButton.textContent}" for PBCs: [${connectedPBCs.join(', ')}]`);
     
-    if (connectedPBCs.length === 1) {
-      // Single PBC Component - use that color
-      const pbcColor = getPBCColor(connectedPBCs[0]);
-      partnerButton.style.backgroundColor = pbcColor;
-      partnerButton.style.border = `2px solid ${pbcColor}`;
-      partnerButton.style.color = '#333';
-      partnerButton.style.background = pbcColor; // Clear any gradient
-      console.log(`🎨 Applied ${connectedPBCs[0]} color to partner: ${partnerButton.textContent}`);
-    } else {
-      // Multiple PBC Components - create half-half split
-      const color1 = getPBCColor(connectedPBCs[0]);
-      const color2 = getPBCColor(connectedPBCs[1]); // Use first two colors if more than 2
-      
-      // Create a linear gradient for half-half split
-      const gradient = `linear-gradient(90deg, ${color1} 50%, ${color2} 50%)`;
-      partnerButton.style.background = gradient;
-      partnerButton.style.border = `2px solid ${color1}`;
-      partnerButton.style.color = '#333';
-      
-      console.log(`🌈 Applied half-half gradient "${gradient}" to partner: ${partnerButton.textContent}`);
-    }
+    // Clear any existing PBC Component classes
+    partnerButton.classList.remove('pbc-economic-vitality', 'pbc-education', 'pbc-community-vibrancy');
     
-    // Verify the styling was applied
-    setTimeout(() => {
-      console.log(`✅ Partner "${partnerButton.textContent}" final background: ${partnerButton.style.background}`);
-    }, 10);
+    // Add CSS classes based on connected PBC Components
+    connectedPBCs.forEach(pbc => {
+      const pbcClass = pbc.toLowerCase().replace(/\s+/g, '-');
+      partnerButton.classList.add(`pbc-${pbcClass}`);
+    });
+    
+    if (connectedPBCs.length === 1) {
+      console.log(`🎨 Applied ${connectedPBCs[0]} CSS class to partner: ${partnerButton.textContent}`);
+    } else {
+      console.log(`🌈 Applied multiple PBC CSS classes to partner: ${partnerButton.textContent}`);
+    }
   };
 
   // Function to clear Partner column colors
@@ -296,6 +294,24 @@ window.onload = async function () {
         }
       });
       console.log('🧹 Cleared Partner column colors and data attributes');
+    }
+  };
+
+  // Function to clear Partner button selections in horizontal bar
+  const clearPartnerButtonSelections = () => {
+    const partnersHorizontalBar = document.getElementById(`${namespace}-horizontal-partners`);
+    if (partnersHorizontalBar && partnersHorizontalBar.style.display !== 'none') {
+      const selectedPartnerButtons = partnersHorizontalBar.querySelectorAll('div.selected');
+      selectedPartnerButtons.forEach(button => {
+        console.log(`🧹 Deselecting Partner button: ${button.textContent}`);
+        button.click(); // This will deselect it and restore transparent background
+      });
+      // Also clear any orphaned PBC Component classes from all Partner buttons
+      const allPartnerButtons = partnersHorizontalBar.querySelectorAll('div.partner-button');
+      allPartnerButtons.forEach(button => {
+        button.classList.remove('pbc-economic-vitality', 'pbc-education', 'pbc-community-vibrancy');
+      });
+      console.log('🧹 Cleared all Partner button selections and PBC Component classes');
     }
   };
 
@@ -384,6 +400,8 @@ window.onload = async function () {
         // Clear Partner column colors when no PBC Components are selected
         if (dataKey === 'pbcComponents') {
           clearPartnerColumnColors();
+          // Also clear Partner button selections in horizontal bar
+          clearPartnerButtonSelections();
         }
         
         return;
@@ -545,24 +563,20 @@ window.onload = async function () {
         // Add items as clickable toggle buttons
         data[dataKey].forEach(item => {
           const itemDiv = addElement(horizontalBar, 'div');
-          itemDiv.style.padding = '8px 12px';
           
-          // Use custom colors for PBC Components even in untoggled state
+          // Add base filter button class
+          itemDiv.classList.add('momentum-dashboard-filter-button');
+          
+          // Add specific classes based on item type
           if (dataKey === 'pbcComponents') {
-            const pbcColor = getPBCColor(item);
-            itemDiv.style.backgroundColor = pbcColor + '20'; // Light version of PBC color
-            itemDiv.style.border = `1px solid ${pbcColor}60`; // Medium version of PBC color
-            itemDiv.style.color = pbcColor; // Text color matches PBC color
-          } else {
-            itemDiv.style.backgroundColor = brandGradient[colorIndex] + '20';
-            itemDiv.style.border = `1px solid ${brandGradient[colorIndex]}60`;
-            itemDiv.style.color = brandGradient[colorIndex];
+            // Add PBC Component specific class
+            const pbcClass = item.toLowerCase().replace(/\s+/g, '-');
+            itemDiv.classList.add(`pbc-${pbcClass}`);
+          } else if (dataKey === 'partners') {
+            // Add Partner button class
+            itemDiv.classList.add('partner-button');
           }
           
-          itemDiv.style.borderRadius = '4px';
-          itemDiv.style.fontSize = '14px';
-          itemDiv.style.cursor = 'pointer';
-          itemDiv.style.transition = 'all 0.2s ease';
           itemDiv.textContent = item;
           
           // Add click functionality
@@ -570,42 +584,15 @@ window.onload = async function () {
             if (selectedItems.has(item)) {
               // Deselect item
               selectedItems.delete(item);
-              if (dataKey === 'pbcComponents') {
-                // Return to light version of PBC Component color
-                const pbcColor = getPBCColor(item);
-                itemDiv.style.backgroundColor = pbcColor + '20';
-                itemDiv.style.border = `1px solid ${pbcColor}60`;
-                itemDiv.style.color = pbcColor;
-              } else {
-                // For Partners and other columns, clear any gradients and use default
-                itemDiv.style.backgroundColor = brandGradient[colorIndex] + '20';
-                itemDiv.style.border = `1px solid ${brandGradient[colorIndex]}60`;
-                itemDiv.style.background = ''; // Clear any gradient
-              }
               itemDiv.classList.remove('selected');
+              // Clear any PBC Component color classes from Partner buttons
+              if (dataKey === 'partners') {
+                itemDiv.classList.remove('pbc-economic-vitality', 'pbc-education', 'pbc-community-vibrancy');
+              }
               console.log(`🔴 Deselected ${dataKey}: ${item}`);
             } else {
               // Select item
               selectedItems.add(item);
-              if (dataKey === 'pbcComponents') {
-                // Use custom colors for selected PBC Components
-                const pbcColor = getPBCColor(item);
-                itemDiv.style.backgroundColor = pbcColor;
-                itemDiv.style.border = `2px solid ${pbcColor}`;
-                itemDiv.style.color = '#333'; // Dark text for better contrast
-              } else if (dataKey === 'partners') {
-                // For Partners, check if this was colored by PBC Component cascade
-                // If so, preserve the existing styling, otherwise use default
-                if (!itemDiv.style.background || !itemDiv.style.background.includes('linear-gradient')) {
-                  // No gradient, use default partner styling
-                  itemDiv.style.backgroundColor = brandGradient[colorIndex] + '60';
-                  itemDiv.style.border = `2px solid ${brandGradient[colorIndex]}`;
-                }
-                // If there's already a gradient, preserve it
-              } else {
-                itemDiv.style.backgroundColor = brandGradient[colorIndex] + '60';
-                itemDiv.style.border = `2px solid ${brandGradient[colorIndex]}`;
-              }
               itemDiv.classList.add('selected');
               console.log(`🟢 Selected ${dataKey}: ${item}`);
             }
@@ -624,34 +611,27 @@ window.onload = async function () {
             // Note: We intentionally don't cascade from Partners to PBC Components (one-way only)
           });
           
-          // Add hover effects
-          itemDiv.addEventListener('mouseenter', () => {
-            if (!selectedItems.has(item)) {
-              if (dataKey === 'pbcComponents') {
-                const pbcColor = getPBCColor(item);
-                itemDiv.style.backgroundColor = pbcColor + '40'; // Medium hover version
-              } else {
-                itemDiv.style.backgroundColor = brandGradient[colorIndex] + '40';
-              }
-            }
-          });
-          
-          itemDiv.addEventListener('mouseleave', () => {
-            if (!selectedItems.has(item)) {
-              if (dataKey === 'pbcComponents') {
-                const pbcColor = getPBCColor(item);
-                itemDiv.style.backgroundColor = pbcColor + '20'; // Back to light version
-              } else {
-                itemDiv.style.backgroundColor = brandGradient[colorIndex] + '20';
-              }
-            }
-          });
+          // Hover effects are now handled by CSS
         });
         
         // Insert the horizontal bar before the dashboardWrapper
         dashboard.insertBefore(horizontalBar, dashboardWrapper);
       } else {
         horizontalBar.style.display = 'flex';
+      }
+      
+      // Special handling for Partners column: Check if PBC Components are already selected
+      if (dataKey === 'partners') {
+        console.log('🔄 Partners column hidden - checking for existing PBC Component selections');
+        const pbcHorizontalBar = document.getElementById(`${namespace}-horizontal-pbcComponents`);
+        if (pbcHorizontalBar && pbcHorizontalBar.style.display !== 'none') {
+          // PBC Components are also hidden, trigger cascade if any are selected
+          const selectedPBCButtons = pbcHorizontalBar.querySelectorAll('div.selected');
+          if (selectedPBCButtons.length > 0) {
+            console.log('🎯 Found existing PBC Component selections, triggering Partner cascade');
+            triggerPartnerCascadeFromPBC();
+          }
+        }
       }
     } else {
       // Show column
@@ -1205,13 +1185,15 @@ window.onload = async function () {
   });
 
   // Helper fn that highlights a column if it's associated with the hovered column
-  const highlightColumn = (data, columnKey, columnId) => {
+  const highlightColumn = (data, columnKey, columnId, overrideColor = null) => {
     const highlightIndices = data[columnKey];
     const highlightColumn = document.getElementById(columnId);
     const columnChildren = highlightColumn.getElementsByClassName(textClass);
+    // Use override color if provided, otherwise use the column's own color
+    const highlightColor = overrideColor || columns[columnId].columnColor;
     highlightIndices.forEach(idx => {
       const dataToHighlight = columnChildren[idx];
-      dataToHighlight.style.background = `${columns[columnId].columnColor}80`;
+      dataToHighlight.style.background = `${highlightColor}80`;
     });
   };
 
@@ -1234,16 +1216,31 @@ window.onload = async function () {
 
   const strategyValues = Object.values(data.strategies);
 
+  // Function to get the primary PBC Component color for a strategy
+  const getStrategyPBCColor = (strategyIndex) => {
+    const strategy = strategyValues[strategyIndex];
+    if (strategy && strategy.pbcComponents && strategy.pbcComponents.length > 0) {
+      // Get the first (primary) PBC Component for this strategy
+      const primaryPBCIndex = strategy.pbcComponents[0];
+      const primaryPBC = data.pbcComponents[primaryPBCIndex];
+      return getPBCColor(primaryPBC);
+    }
+    // Fallback to default Strategy color if no PBC Component found
+    return columns[strategiesId].columnColor;
+  };
+
   const highlightStrategyOutcomes = i => () => {
     if (clickedStrategy) {
       return;
     }
-    highlightColumn(strategyValues[i], 'pbcComponents', pbcComponentsId);
+    // Use the PBC Component color for this specific strategy
+    const strategyColor = getStrategyPBCColor(i);
+    highlightColumn(strategyValues[i], 'pbcComponents', pbcComponentsId, strategyColor);
     // Skip Partners column highlighting to preserve PBC Component colors
     // highlightColumn(strategyValues[i], 'partners', partnersId);
-    highlightColumn(strategyValues[i], 'outputs', outputsId);
-    highlightColumn(strategyValues[i], 'immediateOutputs', immediateOutputsId);
-    highlightColumn(strategyValues[i], 'intermediateOutputs', intermediateOutputsId);
+    highlightColumn(strategyValues[i], 'outputs', outputsId, strategyColor);
+    highlightColumn(strategyValues[i], 'immediateOutputs', immediateOutputsId, strategyColor);
+    highlightColumn(strategyValues[i], 'intermediateOutputs', intermediateOutputsId, strategyColor);
   };
 
   const unfilterColumns = () => {
@@ -1347,29 +1344,6 @@ window.onload = async function () {
         const highlightRelatedStrategies = () => {
           if (clickedStrategy) return;
           
-          // Highlight the hovered item itself
-          // Special handling for Partners column when PBC Components are filtered
-          if (columnId === partnersId && textDiv.hasAttribute('data-pbc-colored')) {
-            // This Partner item has PBC Component colors - add subtle hover effect
-            textDiv.style.boxShadow = `0 0 8px ${columns[columnId].columnColor}80`;
-            
-            // Brighten the existing PBC Component color for hover
-            const originalBg = textDiv.getAttribute('data-original-bg');
-            if (originalBg) {
-              if (originalBg.includes('linear-gradient')) {
-                // For gradients, add a subtle overlay
-                textDiv.style.background = originalBg;
-                textDiv.style.opacity = '0.8';
-              } else if (originalBg.includes('#')) {
-                // For solid colors, increase opacity from 20 to 40
-                const brighterBg = originalBg.replace(/20$/, '40');
-                textDiv.style.backgroundColor = brighterBg;
-              }
-            }
-          } else {
-            textDiv.style.background = `${columns[columnId].columnColor}80`;
-          }
-          
           // Find strategies that are connected to this item
           const connectedStrategies = [];
           strategyValues.forEach((strategy, strategyIdx) => {
@@ -1394,12 +1368,44 @@ window.onload = async function () {
             }
           });
           
-          // Highlight connected strategies
+          // Highlight the hovered item itself
+          // Special handling for Partners column when PBC Components are filtered
+          if (columnId === partnersId && textDiv.hasAttribute('data-pbc-colored')) {
+            // This Partner item has PBC Component colors - add subtle hover effect
+            textDiv.style.boxShadow = `0 0 8px ${columns[columnId].columnColor}80`;
+            
+            // Brighten the existing PBC Component color for hover
+            const originalBg = textDiv.getAttribute('data-original-bg');
+            if (originalBg) {
+              if (originalBg.includes('linear-gradient')) {
+                // For gradients, add a subtle overlay
+                textDiv.style.background = originalBg;
+                textDiv.style.opacity = '0.8';
+              } else if (originalBg.includes('#')) {
+                // For solid colors, increase opacity from 20 to 40
+                const brighterBg = originalBg.replace(/20$/, '40');
+                textDiv.style.backgroundColor = brighterBg;
+              }
+            }
+          } else {
+            // Use PBC Component color from the first connected strategy for item highlighting
+            if (connectedStrategies.length > 0) {
+              const firstStrategyIdx = connectedStrategies[0];
+              const highlightColor = getStrategyPBCColor(firstStrategyIdx);
+              textDiv.style.background = `${highlightColor}80`;
+            } else {
+              // Fallback to Strategy color if no connected strategies found
+              textDiv.style.background = `${columns[strategiesId].columnColor}80`;
+            }
+          }
+          
+          // Highlight connected strategies using their PBC Component colors
           const strategiesColumn = document.getElementById(strategiesId);
           const strategiesChildren = strategiesColumn.getElementsByClassName(`${namespace}-data-wrapper`);
           connectedStrategies.forEach(strategyIdx => {
             if (strategiesChildren[strategyIdx]) {
-              strategiesChildren[strategyIdx].style.background = `${columns[strategiesId].columnColor}80`;
+              const strategyColor = getStrategyPBCColor(strategyIdx);
+              strategiesChildren[strategyIdx].style.background = `${strategyColor}80`;
             }
           });
           
@@ -1411,21 +1417,27 @@ window.onload = async function () {
             const targetChildren = targetColumn.getElementsByClassName(`${namespace}-data-wrapper`);
             const targetData = data[dataKey];
             
-            // Get all related items from connected strategies
-            const relatedItems = new Set();
+            // Get all related items from connected strategies and track which strategies connect to each item
+            const relatedItems = new Map(); // itemIdx -> [strategyIdx1, strategyIdx2, ...]
             connectedStrategies.forEach(strategyIdx => {
               const strategy = strategyValues[strategyIdx];
               if (strategy[dataKey]) {
                 strategy[dataKey].forEach(itemIdx => {
-                  relatedItems.add(itemIdx);
+                  if (!relatedItems.has(itemIdx)) {
+                    relatedItems.set(itemIdx, []);
+                  }
+                  relatedItems.get(itemIdx).push(strategyIdx);
                 });
               }
             });
             
-            // Highlight related items
+            // Highlight related items using the PBC Component color of the first connected strategy
             [...targetChildren].forEach((child, idx) => {
               if (relatedItems.has(idx)) {
-                child.style.background = `${columns[targetColumnId].columnColor}80`;
+                const connectedStrategyIndices = relatedItems.get(idx);
+                const firstStrategyIdx = connectedStrategyIndices[0];
+                const highlightColor = getStrategyPBCColor(firstStrategyIdx);
+                child.style.background = `${highlightColor}80`;
               }
             });
           };
