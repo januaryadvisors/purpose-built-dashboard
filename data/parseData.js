@@ -9,6 +9,7 @@ const parse = async () => {
   const inputTooltipsRaw = fs.readFileSync('./input_tooltips.csv', { encoding: 'utf8' });
 
   const arrayify = multilineRow => {
+    if (!multilineRow) return []; // Handle undefined/null values
     return multilineRow
       .split('\n')
       .map(item => item.trim())
@@ -16,7 +17,7 @@ const parse = async () => {
   };
 
   const getUnique = (data, key) => {
-    return [...new Set(data.map(row => arrayify(row[key])).flat())];
+    return [...new Set(data.map(row => arrayify(row[key])).flat())].filter(item => item);
   };
 
   const model = d3dsv.csvParse(modelRaw);
@@ -25,7 +26,8 @@ const parse = async () => {
   const inputTooltips = d3dsv.csvParse(inputTooltipsRaw);
 
   const inputs = getUnique(model, 'Inputs');
-  const pbcComponents = getUnique(model, 'PBC Component');
+  // Since PBC Component column doesn't exist yet, create placeholder data
+  const pbcComponents = ['Economic Vitality', 'Education', 'Community Vibrancy'];
   const partners = getUnique(model, 'Partners');
   const outputs = getUnique(model, 'Output');
   const immediateOutputs = getUnique(model, 'Immediate Outcomes');
@@ -33,7 +35,7 @@ const parse = async () => {
   const longTermOutputs = getUnique(model, 'Long-term Outcomes');
 
   const strategies = Object.fromEntries(
-    model.map(row => [
+    model.map((row, index) => [
       row.Strategy.trim(),
       {
         label: row.Strategy,
@@ -47,7 +49,8 @@ const parse = async () => {
         ),
         // All long term outputs are associated with every strategy
         longTermOutputs: longTermOutputs.map((_, i) => i),
-        pbcComponents: arrayify(row['PBC Component']).map(pbcComponent => pbcComponents.indexOf(pbcComponent)),
+        // Assign placeholder PBC Components - distribute strategies across the three components
+        pbcComponents: [index % 3], // This will cycle through 0, 1, 2 (Economic Vitality, Education, Community Vibrancy)
         partners: arrayify(row.Partners).map(partner => partners.indexOf(partner)),
         research: [],
       },

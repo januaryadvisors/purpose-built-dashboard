@@ -118,6 +118,41 @@ window.onload = async function () {
   // Holds whether or not a strategy has been clicked
   let clickedStrategy = false;
 
+  // PBC Component color mapping
+  const pbcColors = {
+    'Economic Vitality': '#7B8FC5',
+    'Education': '#7ED7A2', 
+    'Community Vibrancy': '#E5B8A0'
+  };
+
+  // Function to get PBC Component color
+  const getPBCColor = (pbcComponent) => {
+    return pbcColors[pbcComponent] || brandGradient[0]; // fallback to default color
+  };
+
+  // Function to blend two hex colors (alternative to half-half split)
+  const blendColors = (color1, color2) => {
+    // Remove # if present
+    color1 = color1.replace('#', '');
+    color2 = color2.replace('#', '');
+    
+    // Parse RGB components
+    const r1 = parseInt(color1.substr(0, 2), 16);
+    const g1 = parseInt(color1.substr(2, 2), 16);
+    const b1 = parseInt(color1.substr(4, 2), 16);
+    
+    const r2 = parseInt(color2.substr(0, 2), 16);
+    const g2 = parseInt(color2.substr(2, 2), 16);
+    const b2 = parseInt(color2.substr(4, 2), 16);
+    
+    // Average the colors
+    const r = Math.round((r1 + r2) / 2);
+    const g = Math.round((g1 + g2) / 2);
+    const b = Math.round((b1 + b2) / 2);
+    
+    return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
+  };
+
   // Function to trigger Partner button clicks based on selected PBC Components
   const triggerPartnerCascadeFromPBC = () => {
     const pbcHorizontalBar = document.getElementById(`${namespace}-horizontal-pbcComponents`);
@@ -164,17 +199,115 @@ window.onload = async function () {
       
       console.log(`🔍 Partner "${partnerName}": shouldBe=${shouldBeSelected}, currently=${isCurrentlySelected}`);
       
+      // Find which PBC Components this partner is connected to
+      const connectedPBCs = new Set();
+      if (shouldBeSelected) {
+        Object.values(data.strategies).forEach(strategy => {
+          const strategyPBCComponents = strategy.pbcComponents ? strategy.pbcComponents.map(idx => data.pbcComponents[idx]) : [];
+          const hasSelectedPBC = strategyPBCComponents.some(pbc => selectedPBCComponents.has(pbc));
+          
+          if (hasSelectedPBC) {
+            const strategyPartners = strategy.partners ? strategy.partners.map(idx => data.partners[idx]) : [];
+            if (strategyPartners.includes(partnerName)) {
+              strategyPBCComponents.forEach(pbc => {
+                if (selectedPBCComponents.has(pbc)) {
+                  connectedPBCs.add(pbc);
+                }
+              });
+            }
+          }
+        });
+      }
+      
       // Only trigger click if the state needs to change
       if (shouldBeSelected && !isCurrentlySelected) {
         // Need to select this partner
         console.log(`👆 Clicking to SELECT partner: ${partnerName}`);
         button.click();
+        
+        // Apply color styling based on connected PBC Components
+        setTimeout(() => {
+          applyPartnerColors(button, Array.from(connectedPBCs));
+        }, 100); // Increased delay to ensure click handler finishes
+        
       } else if (!shouldBeSelected && isCurrentlySelected) {
         // Need to deselect this partner
         console.log(`👆 Clicking to DESELECT partner: ${partnerName}`);
         button.click();
       }
     });
+  };
+
+  // Function to apply PBC Component colors to Partner buttons
+  const applyPartnerColors = (partnerButton, connectedPBCs) => {
+    if (connectedPBCs.length === 0) return;
+    
+    console.log(`🎨 Applying colors to partner "${partnerButton.textContent}" for PBCs: [${connectedPBCs.join(', ')}]`);
+    
+    if (connectedPBCs.length === 1) {
+      // Single PBC Component - use that color
+      const pbcColor = getPBCColor(connectedPBCs[0]);
+      partnerButton.style.backgroundColor = pbcColor;
+      partnerButton.style.border = `2px solid ${pbcColor}`;
+      partnerButton.style.color = '#333';
+      partnerButton.style.background = pbcColor; // Clear any gradient
+      console.log(`🎨 Applied ${connectedPBCs[0]} color to partner: ${partnerButton.textContent}`);
+    } else {
+      // Multiple PBC Components - create half-half split
+      const color1 = getPBCColor(connectedPBCs[0]);
+      const color2 = getPBCColor(connectedPBCs[1]); // Use first two colors if more than 2
+      
+      // Create a linear gradient for half-half split
+      const gradient = `linear-gradient(90deg, ${color1} 50%, ${color2} 50%)`;
+      partnerButton.style.background = gradient;
+      partnerButton.style.border = `2px solid ${color1}`;
+      partnerButton.style.color = '#333';
+      
+      console.log(`🌈 Applied half-half gradient "${gradient}" to partner: ${partnerButton.textContent}`);
+    }
+    
+    // Verify the styling was applied
+    setTimeout(() => {
+      console.log(`✅ Partner "${partnerButton.textContent}" final background: ${partnerButton.style.background}`);
+    }, 10);
+  };
+
+  // Function to clear Partner column colors
+  const clearPartnerColumnColors = () => {
+    const partnersColumn = document.getElementById(partnersId);
+    if (partnersColumn) {
+      const partnersChildren = partnersColumn.getElementsByClassName(`${namespace}-data-wrapper`);
+      [...partnersChildren].forEach(child => {
+        const partnerItem = child.querySelector(`.${namespace}-datum`);
+        if (partnerItem) {
+          partnerItem.style.backgroundColor = '';
+          partnerItem.style.border = '';
+          partnerItem.style.background = '';
+          partnerItem.style.borderRadius = '';
+          partnerItem.style.padding = '';
+          partnerItem.style.boxShadow = '';
+          partnerItem.style.opacity = '';
+          // Clear data attributes
+          partnerItem.removeAttribute('data-pbc-colored');
+          partnerItem.removeAttribute('data-original-bg');
+          partnerItem.removeAttribute('data-original-border');
+          partnerItem.removeAttribute('data-original-border-radius');
+          partnerItem.removeAttribute('data-original-padding');
+        }
+      });
+      console.log('🧹 Cleared Partner column colors and data attributes');
+    }
+  };
+
+  // Function to check if PBC Components are currently filtered
+  const isPBCComponentsFiltered = () => {
+    const pbcHorizontalBar = document.getElementById(`${namespace}-horizontal-pbcComponents`);
+    if (pbcHorizontalBar && pbcHorizontalBar.style.display !== 'none') {
+      // Check if any PBC Component buttons are selected
+      const pbcButtons = pbcHorizontalBar.querySelectorAll('div.selected');
+      return pbcButtons.length > 0;
+    }
+    return false;
   };
 
   const columns = {
@@ -226,13 +359,12 @@ window.onload = async function () {
     // Function to filter strategies based on selected items
     const filterStrategiesByItems = () => {
       const strategiesColumn = document.getElementById(strategiesId);
+      if (!strategiesColumn) return;
+      
       const strategiesChildren = strategiesColumn.getElementsByClassName(`${namespace}-data-wrapper`);
       
-      console.log(`🔄 Filtering strategies for ${dataKey}, selectedItems:`, Array.from(selectedItems));
-      
       if (selectedItems.size === 0) {
-        console.log(`📄 No items selected for ${dataKey}, showing all strategies`);
-        // Show all strategies if no items selected
+        // Show all strategies
         [...strategiesChildren].forEach(child => {
           child.style.display = 'block';
         });
@@ -248,73 +380,140 @@ window.onload = async function () {
             });
           }
         });
-      } else {
-        // Get visible strategies
-        const visibleStrategies = [];
-        [...strategiesChildren].forEach((child, idx) => {
-          const strategy = strategyValues[idx];
-          const strategyItems = strategy[dataKey] ? strategy[dataKey].map(itemIdx => data[dataKey][itemIdx]) : [];
-          const hasSelectedItem = strategyItems.some(item => selectedItems.has(item));
-          
-          if (hasSelectedItem) {
-            visibleStrategies.push(strategy);
-            child.style.display = 'block';
-          } else {
-            child.style.display = 'none';
-          }
-        });
         
-        // Filter other columns based on visible strategies
-        const filterColumnByStrategies = (columnId, dataKey) => {
-          const column = document.getElementById(columnId);
-          if (!column) return;
+        // Clear Partner column colors when no PBC Components are selected
+        if (dataKey === 'pbcComponents') {
+          clearPartnerColumnColors();
+        }
+        
+        return;
+      }
+      
+      // Get visible strategies
+      const visibleStrategies = [];
+      [...strategiesChildren].forEach((child, idx) => {
+        const strategy = strategyValues[idx];
+        const strategyItems = strategy[dataKey] ? strategy[dataKey].map(itemIdx => data[dataKey][itemIdx]) : [];
+        const hasSelectedItem = strategyItems.some(item => selectedItems.has(item));
+        
+        if (hasSelectedItem) {
+          visibleStrategies.push(strategy);
+          child.style.display = 'block';
+        } else {
+          child.style.display = 'none';
+        }
+      });
+      
+      // Filter other columns based on visible strategies
+      const filterColumnByStrategies = (columnId, dataKey) => {
+        const column = document.getElementById(columnId);
+        if (!column) return;
+        
+        const columnChildren = column.getElementsByClassName(`${namespace}-data-wrapper`);
+        const columnData = data[dataKey];
+        
+        [...columnChildren].forEach((child, idx) => {
+          const item = columnData[idx];
           
-          const columnChildren = column.getElementsByClassName(`${namespace}-data-wrapper`);
-          const columnData = data[dataKey];
+          // Check if this item is connected to any visible strategy
+          const isConnected = visibleStrategies.some(strategy => {
+            const strategyItems = strategy[dataKey];
+            return strategyItems && strategyItems.includes(idx);
+          });
           
-          [...columnChildren].forEach((child, idx) => {
-            const item = columnData[idx];
-            
-            // Check if this item is connected to any visible strategy
-            const isConnected = visibleStrategies.some(strategy => {
-              const strategyItems = strategy[dataKey];
-              return strategyItems && strategyItems.includes(idx);
-            });
-            
-                      child.style.display = isConnected ? 'block' : 'none';
+          child.style.display = isConnected ? 'block' : 'none';
         });
       };
-        
-        // Filter each column
-        filterColumnByStrategies(outputsId, 'outputs');
-        filterColumnByStrategies(immediateOutputsId, 'immediateOutputs');
-        filterColumnByStrategies(intermediateOutputsId, 'intermediateOutputs');
-        filterColumnByStrategies(longTermOutputsId, 'longTermOutputs');
-        
-        // Always filter Partners column based on visible strategies
-        if (dataKey === 'pbcComponents') {
-          // When filtering by PBC Components, filter Partners based on the strategies that are visible
-          const partnersColumn = document.getElementById(partnersId);
-          if (partnersColumn) {
-            const partnersChildren = partnersColumn.getElementsByClassName(`${namespace}-data-wrapper`);
-            console.log(`🤝 Filtering Partners column based on PBC Components`);
+      
+      // Filter each column
+      filterColumnByStrategies(outputsId, 'outputs');
+      filterColumnByStrategies(immediateOutputsId, 'immediateOutputs');
+      filterColumnByStrategies(intermediateOutputsId, 'intermediateOutputs');
+      filterColumnByStrategies(longTermOutputsId, 'longTermOutputs');
+      
+      // Always filter Partners column based on visible strategies
+      if (dataKey === 'pbcComponents') {
+        // When filtering by PBC Components, filter Partners based on the strategies that are visible
+        const partnersColumn = document.getElementById(partnersId);
+        if (partnersColumn) {
+          const partnersChildren = partnersColumn.getElementsByClassName(`${namespace}-data-wrapper`);
+          console.log(`🤝 Filtering Partners column based on PBC Components`);
+          
+          [...partnersChildren].forEach((child, idx) => {
+            const partner = data.partners[idx];
             
-            [...partnersChildren].forEach((child, idx) => {
-              const partner = data.partners[idx];
+            // Check if this partner is connected to any visible strategy
+            const isConnectedToPBCComponent = visibleStrategies.some(strategy => {
+              return strategy.partners && strategy.partners.includes(idx);
+            });
+            
+            if (isConnectedToPBCComponent) {
+              child.style.display = 'block';
               
-              // Check if this partner is connected to any visible strategy
-              const isConnectedToPBCComponent = visibleStrategies.some(strategy => {
-                return strategy.partners && strategy.partners.includes(idx);
+              // Apply color coordination based on connected PBC Components
+              const connectedPBCs = new Set();
+              visibleStrategies.forEach(strategy => {
+                if (strategy.partners && strategy.partners.includes(idx)) {
+                  const strategyPBCComponents = strategy.pbcComponents ? strategy.pbcComponents.map(pbcIdx => data.pbcComponents[pbcIdx]) : [];
+                  strategyPBCComponents.forEach(pbc => {
+                    if (selectedItems.has(pbc)) {
+                      connectedPBCs.add(pbc);
+                    }
+                  });
+                }
               });
               
-              child.style.display = isConnectedToPBCComponent ? 'block' : 'none';
-              console.log(`🤝 Partner "${partner}" connected to PBC strategies: ${isConnectedToPBCComponent}`);
-            });
-          }
-        } else {
-          // For other filtering types, filter Partners normally
-          filterColumnByStrategies(partnersId, 'partners');
+              // Apply color styling to the Partner column item
+              const partnerItem = child.querySelector(`.${namespace}-datum`);
+              if (partnerItem && connectedPBCs.size > 0) {
+                const connectedPBCsArray = Array.from(connectedPBCs);
+                
+                // Mark this item as PBC-colored for hover preservation
+                partnerItem.setAttribute('data-pbc-colored', 'true');
+                
+                if (connectedPBCsArray.length === 1) {
+                  // Single PBC Component - use that color
+                  const pbcColor = getPBCColor(connectedPBCsArray[0]);
+                  partnerItem.style.backgroundColor = pbcColor + '20'; // Light version
+                  partnerItem.style.border = `2px solid ${pbcColor}60`;
+                  // Store the original styling in data attributes for hover restoration
+                  partnerItem.setAttribute('data-original-bg', pbcColor + '20');
+                  partnerItem.setAttribute('data-original-border', `2px solid ${pbcColor}60`);
+                  console.log(`🎨 Applied ${connectedPBCsArray[0]} color to visible partner: ${partner}`);
+                } else {
+                  // Multiple PBC Components - create gradient background
+                  const color1 = getPBCColor(connectedPBCsArray[0]);
+                  const color2 = getPBCColor(connectedPBCsArray[1]);
+                  const gradient = `linear-gradient(135deg, ${color1}20 50%, ${color2}20 50%)`;
+                  partnerItem.style.background = gradient;
+                  partnerItem.style.border = `2px solid ${color1}60`;
+                  // Store the original styling in data attributes for hover restoration
+                  partnerItem.setAttribute('data-original-bg', gradient);
+                  partnerItem.setAttribute('data-original-border', `2px solid ${color1}60`);
+                  console.log(`🌈 Applied gradient background to visible partner: ${partner}`);
+                }
+                partnerItem.style.borderRadius = '4px';
+                partnerItem.style.padding = '4px 8px';
+                partnerItem.setAttribute('data-original-border-radius', '4px');
+                partnerItem.setAttribute('data-original-padding', '4px 8px');
+              } else {
+                // Clear PBC-colored marking if no PBCs connected
+                partnerItem?.removeAttribute('data-pbc-colored');
+                partnerItem?.removeAttribute('data-original-bg');
+                partnerItem?.removeAttribute('data-original-border');
+                partnerItem?.removeAttribute('data-original-border-radius');
+                partnerItem?.removeAttribute('data-original-padding');
+              }
+            } else {
+              child.style.display = 'none';
+            }
+            
+            console.log(`🤝 Partner "${partner}" connected to PBC strategies: ${isConnectedToPBCComponent}`);
+          });
         }
+      } else {
+        // For other filtering types, filter Partners normally
+        filterColumnByStrategies(partnersId, 'partners');
       }
     };
     
@@ -347,11 +546,21 @@ window.onload = async function () {
         data[dataKey].forEach(item => {
           const itemDiv = addElement(horizontalBar, 'div');
           itemDiv.style.padding = '8px 12px';
-          itemDiv.style.backgroundColor = brandGradient[colorIndex] + '20';
-          itemDiv.style.border = `1px solid ${brandGradient[colorIndex]}60`;
+          
+          // Use custom colors for PBC Components even in untoggled state
+          if (dataKey === 'pbcComponents') {
+            const pbcColor = getPBCColor(item);
+            itemDiv.style.backgroundColor = pbcColor + '20'; // Light version of PBC color
+            itemDiv.style.border = `1px solid ${pbcColor}60`; // Medium version of PBC color
+            itemDiv.style.color = pbcColor; // Text color matches PBC color
+          } else {
+            itemDiv.style.backgroundColor = brandGradient[colorIndex] + '20';
+            itemDiv.style.border = `1px solid ${brandGradient[colorIndex]}60`;
+            itemDiv.style.color = brandGradient[colorIndex];
+          }
+          
           itemDiv.style.borderRadius = '4px';
           itemDiv.style.fontSize = '14px';
-          itemDiv.style.color = brandGradient[colorIndex];
           itemDiv.style.cursor = 'pointer';
           itemDiv.style.transition = 'all 0.2s ease';
           itemDiv.textContent = item;
@@ -361,15 +570,42 @@ window.onload = async function () {
             if (selectedItems.has(item)) {
               // Deselect item
               selectedItems.delete(item);
-              itemDiv.style.backgroundColor = brandGradient[colorIndex] + '20';
-              itemDiv.style.border = `1px solid ${brandGradient[colorIndex]}60`;
+              if (dataKey === 'pbcComponents') {
+                // Return to light version of PBC Component color
+                const pbcColor = getPBCColor(item);
+                itemDiv.style.backgroundColor = pbcColor + '20';
+                itemDiv.style.border = `1px solid ${pbcColor}60`;
+                itemDiv.style.color = pbcColor;
+              } else {
+                // For Partners and other columns, clear any gradients and use default
+                itemDiv.style.backgroundColor = brandGradient[colorIndex] + '20';
+                itemDiv.style.border = `1px solid ${brandGradient[colorIndex]}60`;
+                itemDiv.style.background = ''; // Clear any gradient
+              }
               itemDiv.classList.remove('selected');
               console.log(`🔴 Deselected ${dataKey}: ${item}`);
             } else {
               // Select item
               selectedItems.add(item);
-              itemDiv.style.backgroundColor = brandGradient[colorIndex] + '60';
-              itemDiv.style.border = `2px solid ${brandGradient[colorIndex]}`;
+              if (dataKey === 'pbcComponents') {
+                // Use custom colors for selected PBC Components
+                const pbcColor = getPBCColor(item);
+                itemDiv.style.backgroundColor = pbcColor;
+                itemDiv.style.border = `2px solid ${pbcColor}`;
+                itemDiv.style.color = '#333'; // Dark text for better contrast
+              } else if (dataKey === 'partners') {
+                // For Partners, check if this was colored by PBC Component cascade
+                // If so, preserve the existing styling, otherwise use default
+                if (!itemDiv.style.background || !itemDiv.style.background.includes('linear-gradient')) {
+                  // No gradient, use default partner styling
+                  itemDiv.style.backgroundColor = brandGradient[colorIndex] + '60';
+                  itemDiv.style.border = `2px solid ${brandGradient[colorIndex]}`;
+                }
+                // If there's already a gradient, preserve it
+              } else {
+                itemDiv.style.backgroundColor = brandGradient[colorIndex] + '60';
+                itemDiv.style.border = `2px solid ${brandGradient[colorIndex]}`;
+              }
               itemDiv.classList.add('selected');
               console.log(`🟢 Selected ${dataKey}: ${item}`);
             }
@@ -391,13 +627,23 @@ window.onload = async function () {
           // Add hover effects
           itemDiv.addEventListener('mouseenter', () => {
             if (!selectedItems.has(item)) {
-              itemDiv.style.backgroundColor = brandGradient[colorIndex] + '40';
+              if (dataKey === 'pbcComponents') {
+                const pbcColor = getPBCColor(item);
+                itemDiv.style.backgroundColor = pbcColor + '40'; // Medium hover version
+              } else {
+                itemDiv.style.backgroundColor = brandGradient[colorIndex] + '40';
+              }
             }
           });
           
           itemDiv.addEventListener('mouseleave', () => {
             if (!selectedItems.has(item)) {
-              itemDiv.style.backgroundColor = brandGradient[colorIndex] + '20';
+              if (dataKey === 'pbcComponents') {
+                const pbcColor = getPBCColor(item);
+                itemDiv.style.backgroundColor = pbcColor + '20'; // Back to light version
+              } else {
+                itemDiv.style.backgroundColor = brandGradient[colorIndex] + '20';
+              }
             }
           });
         });
@@ -969,12 +1215,16 @@ window.onload = async function () {
     });
   };
 
-  // Removes column higlights
+  // Removes column higlights (excluding Partners to preserve PBC Component colors)
   const removeColumnHighlights = () => {
     if (clickedStrategy) {
       return;
     }
     columnEls.forEach(columnEl => {
+      // Skip Partners column to preserve PBC Component colors
+      if (columnEl.id === partnersId) {
+        return;
+      }
       const dataChildren = [...columnEl.getElementsByClassName(textClass)];
       dataChildren.forEach(child => {
         child.style.background = 'transparent';
@@ -989,7 +1239,8 @@ window.onload = async function () {
       return;
     }
     highlightColumn(strategyValues[i], 'pbcComponents', pbcComponentsId);
-    highlightColumn(strategyValues[i], 'partners', partnersId);
+    // Skip Partners column highlighting to preserve PBC Component colors
+    // highlightColumn(strategyValues[i], 'partners', partnersId);
     highlightColumn(strategyValues[i], 'outputs', outputsId);
     highlightColumn(strategyValues[i], 'immediateOutputs', immediateOutputsId);
     highlightColumn(strategyValues[i], 'intermediateOutputs', intermediateOutputsId);
@@ -1042,7 +1293,8 @@ window.onload = async function () {
     };
 
     filterColumn(strategyValues[i], 'pbcComponents', pbcComponentsId);
-    filterColumn(strategyValues[i], 'partners', partnersId);
+    // Skip Partners column highlighting to preserve PBC Component colors
+    // filterColumn(strategyValues[i], 'partners', partnersId);
     filterColumn(strategyValues[i], 'outputs', outputsId);
     filterColumn(strategyValues[i], 'immediateOutputs', immediateOutputsId);
     filterColumn(strategyValues[i], 'intermediateOutputs', intermediateOutputsId);
@@ -1096,7 +1348,27 @@ window.onload = async function () {
           if (clickedStrategy) return;
           
           // Highlight the hovered item itself
-          textDiv.style.background = `${columns[columnId].columnColor}80`;
+          // Special handling for Partners column when PBC Components are filtered
+          if (columnId === partnersId && textDiv.hasAttribute('data-pbc-colored')) {
+            // This Partner item has PBC Component colors - add subtle hover effect
+            textDiv.style.boxShadow = `0 0 8px ${columns[columnId].columnColor}80`;
+            
+            // Brighten the existing PBC Component color for hover
+            const originalBg = textDiv.getAttribute('data-original-bg');
+            if (originalBg) {
+              if (originalBg.includes('linear-gradient')) {
+                // For gradients, add a subtle overlay
+                textDiv.style.background = originalBg;
+                textDiv.style.opacity = '0.8';
+              } else if (originalBg.includes('#')) {
+                // For solid colors, increase opacity from 20 to 40
+                const brighterBg = originalBg.replace(/20$/, '40');
+                textDiv.style.backgroundColor = brighterBg;
+              }
+            }
+          } else {
+            textDiv.style.background = `${columns[columnId].columnColor}80`;
+          }
           
           // Find strategies that are connected to this item
           const connectedStrategies = [];
@@ -1158,9 +1430,10 @@ window.onload = async function () {
             });
           };
           
-          // Highlight related items in all other columns
+          // Highlight related items in all other columns (excluding Partners to preserve PBC Component colors)
           if (columnId !== pbcComponentsId) highlightRelatedItems(pbcComponentsId, 'pbcComponents');
-          if (columnId !== partnersId) highlightRelatedItems(partnersId, 'partners');
+          // Skip Partners column highlighting to preserve PBC Component colors
+          // if (columnId !== partnersId) highlightRelatedItems(partnersId, 'partners');
           if (columnId !== outputsId) highlightRelatedItems(outputsId, 'outputs');
           if (columnId !== immediateOutputsId) highlightRelatedItems(immediateOutputsId, 'immediateOutputs');
           if (columnId !== intermediateOutputsId) highlightRelatedItems(intermediateOutputsId, 'intermediateOutputs');
@@ -1171,10 +1444,40 @@ window.onload = async function () {
           if (clickedStrategy) return;
           
           // Remove highlight from hovered item
-          textDiv.style.background = 'transparent';
+          if (columnId === partnersId && textDiv.hasAttribute('data-pbc-colored')) {
+            // For Partners with PBC Component colors, restore original styling
+            textDiv.style.boxShadow = ''; // Clear any box shadow effects
+            textDiv.style.opacity = ''; // Clear any opacity changes
+            
+            // Restore original PBC Component styling from data attributes
+            const originalBg = textDiv.getAttribute('data-original-bg');
+            const originalBorder = textDiv.getAttribute('data-original-border');
+            const originalBorderRadius = textDiv.getAttribute('data-original-border-radius');
+            const originalPadding = textDiv.getAttribute('data-original-padding');
+            
+            if (originalBg) {
+              if (originalBg.includes('linear-gradient')) {
+                textDiv.style.background = originalBg;
+              } else {
+                textDiv.style.backgroundColor = originalBg;
+              }
+            }
+            if (originalBorder) {
+              textDiv.style.border = originalBorder;
+            }
+            if (originalBorderRadius) {
+              textDiv.style.borderRadius = originalBorderRadius;
+            }
+            if (originalPadding) {
+              textDiv.style.padding = originalPadding;
+            }
+          } else {
+            textDiv.style.background = 'transparent';
+            textDiv.style.boxShadow = ''; // Clear any box shadow effects
+          }
           
-          // Remove highlights from all columns manually
-          const allColumns = [pbcComponentsId, partnersId, strategiesId, outputsId, immediateOutputsId, intermediateOutputsId, longTermOutputsId];
+          // Remove highlights from all columns manually (excluding Partners to preserve PBC Component colors)
+          const allColumns = [pbcComponentsId, strategiesId, outputsId, immediateOutputsId, intermediateOutputsId, longTermOutputsId];
           allColumns.forEach(columnId => {
             const column = document.getElementById(columnId);
             if (column) {
@@ -1184,6 +1487,8 @@ window.onload = async function () {
               });
             }
           });
+          
+          // Partners column is intentionally excluded from highlight clearing to preserve PBC Component colors
         };
         
         dataDiv.onmouseenter = highlightRelatedStrategies;
