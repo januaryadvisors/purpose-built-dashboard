@@ -103,6 +103,9 @@ window.onload = async function () {
 
   // Holds whether or not a strategy has been clicked
   let clickedStrategy = false;
+  
+  // Holds whether or not a partner has been clicked
+  let clickedPartner = false;
 
   // PBC Component color mapping
   const pbcColors = {
@@ -556,17 +559,43 @@ window.onload = async function () {
           
                       // Add click functionality
             itemDiv.addEventListener('click', () => {
-              if (selectedItems.has(item)) {
-                // Deselect item
-                selectedItems.delete(item);
-                itemDiv.classList.remove('selected');
-                console.log(`🔴 Deselected ${dataKey}: ${item}`);
+              if (dataKey === 'pbcComponents') {
+                // Exclusive selection for PBC Components
+                if (selectedItems.has(item)) {
+                  // Deselect the current item
+                  selectedItems.delete(item);
+                  itemDiv.classList.remove('selected');
+                  console.log(`🔴 Deselected ${dataKey}: ${item}`);
+                } else {
+                  // First, deselect all other PBC Components
+                  const allPBCButtons = horizontalBar.querySelectorAll('div');
+                  allPBCButtons.forEach(button => {
+                    if (button.textContent && button.classList.contains('selected')) {
+                      selectedItems.delete(button.textContent);
+                      button.classList.remove('selected');
+                    }
+                  });
+                  
+                  // Then select the clicked item
+                  selectedItems.add(item);
+                  itemDiv.classList.add('selected');
+                  console.log(`🟢 Selected ${dataKey}: ${item} (exclusive)`);
+                }
               } else {
-                // Select item
-                selectedItems.add(item);
-                itemDiv.classList.add('selected');
-                console.log(`🟢 Selected ${dataKey}: ${item}`);
+                // Non-exclusive selection for other types (if any)
+                if (selectedItems.has(item)) {
+                  // Deselect item
+                  selectedItems.delete(item);
+                  itemDiv.classList.remove('selected');
+                  console.log(`🔴 Deselected ${dataKey}: ${item}`);
+                } else {
+                  // Select item
+                  selectedItems.add(item);
+                  itemDiv.classList.add('selected');
+                  console.log(`🟢 Selected ${dataKey}: ${item}`);
+                }
               }
+              
               filterStrategiesByItems();
               
               // Filter Partners column based on selected PBC Components
@@ -1148,7 +1177,7 @@ window.onload = async function () {
 
   // Removes column higlights (excluding Partners to preserve PBC Component colors)
   const removeColumnHighlights = () => {
-    if (clickedStrategy) {
+    if (clickedStrategy || clickedPartner) {
       return;
     }
     columnEls.forEach(columnEl => {
@@ -1179,7 +1208,7 @@ window.onload = async function () {
   };
 
   const highlightStrategyOutcomes = i => () => {
-    if (clickedStrategy) {
+    if (clickedStrategy || clickedPartner) {
       return;
     }
     // Use the PBC Component color for this specific strategy
@@ -1192,23 +1221,102 @@ window.onload = async function () {
     highlightColumn(strategyValues[i], 'intermediateOutputs', intermediateOutputsId, strategyColor);
   };
 
+  const highlightPartnerOutcomes = i => () => {
+    if (clickedStrategy || clickedPartner) {
+      return;
+    }
+    
+    // Find all strategies connected to this partner
+    const connectedStrategies = [];
+    strategyValues.forEach((strategy, strategyIdx) => {
+      if (strategy.partners && strategy.partners.includes(i)) {
+        connectedStrategies.push(strategyIdx);
+      }
+    });
+    
+    // Use the first connected strategy's color for highlighting
+    const highlightColor = connectedStrategies.length > 0 
+      ? getStrategyPBCColor(connectedStrategies[0])
+      : columns[partnersId].columnColor;
+    
+    // Highlight strategies connected to this partner
+    const strategiesColumn = document.getElementById(strategiesId);
+    const strategiesChildren = strategiesColumn.getElementsByClassName(`${namespace}-data-wrapper`);
+    connectedStrategies.forEach(strategyIdx => {
+      if (strategiesChildren[strategyIdx]) {
+        const strategyColor = getStrategyPBCColor(strategyIdx);
+        strategiesChildren[strategyIdx].style.background = `${strategyColor}80`;
+      }
+    });
+    
+    // Highlight all outcomes from connected strategies
+    const allConnectedOutcomes = {
+      pbcComponents: new Set(),
+      outputs: new Set(),
+      immediateOutputs: new Set(),
+      intermediateOutputs: new Set(),
+      longTermOutputs: new Set()
+    };
+    
+    connectedStrategies.forEach(strategyIdx => {
+      const strategy = strategyValues[strategyIdx];
+      if (strategy.pbcComponents) strategy.pbcComponents.forEach(idx => allConnectedOutcomes.pbcComponents.add(idx));
+      if (strategy.outputs) strategy.outputs.forEach(idx => allConnectedOutcomes.outputs.add(idx));
+      if (strategy.immediateOutputs) strategy.immediateOutputs.forEach(idx => allConnectedOutcomes.immediateOutputs.add(idx));
+      if (strategy.intermediateOutputs) strategy.intermediateOutputs.forEach(idx => allConnectedOutcomes.intermediateOutputs.add(idx));
+      if (strategy.longTermOutputs) strategy.longTermOutputs.forEach(idx => allConnectedOutcomes.longTermOutputs.add(idx));
+    });
+    
+    // Highlight the collected outcomes
+    const highlightOutcomeSet = (columnId, outcomeSet) => {
+      const column = document.getElementById(columnId);
+      const columnChildren = column.getElementsByClassName(textClass);
+      Array.from(outcomeSet).forEach(idx => {
+        if (columnChildren[idx]) {
+          columnChildren[idx].style.background = `${highlightColor}80`;
+        }
+      });
+    };
+    
+    highlightOutcomeSet(pbcComponentsId, allConnectedOutcomes.pbcComponents);
+    highlightOutcomeSet(outputsId, allConnectedOutcomes.outputs);
+    highlightOutcomeSet(immediateOutputsId, allConnectedOutcomes.immediateOutputs);
+    highlightOutcomeSet(intermediateOutputsId, allConnectedOutcomes.intermediateOutputs);
+    highlightOutcomeSet(longTermOutputsId, allConnectedOutcomes.longTermOutputs);
+  };
+
   const unfilterColumns = () => {
     clickedStrategy = false;
+    clickedPartner = false;
     [pbcComponentsId, partnersId, strategiesId, outputsId, immediateOutputsId, intermediateOutputsId, longTermOutputsId].forEach(columnId => {
       const column = document.getElementById(columnId);
       const columnChildren = column.getElementsByClassName(`${namespace}-data-wrapper`);
       [...columnChildren].forEach(child => {
         child.style.display = 'block';
+        // Clear any background highlighting
+        child.style.background = 'transparent';
+        
+        // Also clear highlights from the text elements inside
+        const textElements = child.getElementsByClassName(textClass);
+        [...textElements].forEach(textEl => {
+          textEl.style.background = 'transparent';
+          textEl.style.backgroundColor = '';
+          textEl.style.boxShadow = '';
+          textEl.style.opacity = '';
+        });
       });
     });
     seeAllButton.style.display = 'none';
+    seeAllPartnersButton.style.display = 'none';
+    showAllPartnerStrategiesButton.style.display = 'none';
   };
 
   const filterToStrategy = i => () => {
-    if (clickedStrategy) {
+    if (clickedStrategy && !clickedPartner) {
       unfilterColumns();
       return;
     }
+    
     // Only show the clicked on strategy
     highlightStrategyOutcomes(i);
     // Set clickedStrategy to true so we can disable hover states
@@ -1239,14 +1347,116 @@ window.onload = async function () {
     };
 
     filterColumn(strategyValues[i], 'pbcComponents', pbcComponentsId);
-    // Skip Partners column highlighting to preserve PBC Component colors
-    // filterColumn(strategyValues[i], 'partners', partnersId);
+    
+    // Handle Partners column: if partner filter is active, preserve it; otherwise filter by strategy
+    if (!clickedPartner) {
+      filterColumn(strategyValues[i], 'partners', partnersId);
+    }
+    
     filterColumn(strategyValues[i], 'outputs', outputsId);
     filterColumn(strategyValues[i], 'immediateOutputs', immediateOutputsId);
     filterColumn(strategyValues[i], 'intermediateOutputs', intermediateOutputsId);
 
     // Show the reset button
     seeAllButton.style.display = 'block';
+    
+    // Show the "Show all Strategies for this Partner" button if a partner is also filtered
+    if (clickedPartner) {
+      showAllPartnerStrategiesButton.style.display = 'block';
+    }
+  };
+
+  const filterToPartner = i => () => {
+    if (clickedPartner && !clickedStrategy) {
+      unfilterColumns();
+      return;
+    }
+    
+    // Highlight partner outcomes
+    highlightPartnerOutcomes(i)();
+    // Set clickedPartner to true so we can disable hover states
+    clickedPartner = true;
+
+    // Only show the clicked partner
+    const partnersColumn = document.getElementById(partnersId);
+    const partnersChildren = partnersColumn.getElementsByClassName(`${namespace}-data-wrapper`);
+    [...partnersChildren].forEach((child, idx) => {
+      if (idx !== i) {
+        child.style.display = 'none';
+      } else {
+        child.style.display = 'block';
+      }
+    });
+
+    // Find all strategies connected to this partner
+    const connectedStrategies = [];
+    strategyValues.forEach((strategy, strategyIdx) => {
+      if (strategy.partners && strategy.partners.includes(i)) {
+        connectedStrategies.push(strategyIdx);
+      }
+    });
+
+    // Handle Strategies column: if strategy filter is active, preserve it; otherwise show connected strategies
+    if (!clickedStrategy) {
+      const strategiesColumn = document.getElementById(strategiesId);
+      const strategiesChildren = strategiesColumn.getElementsByClassName(`${namespace}-data-wrapper`);
+      [...strategiesChildren].forEach((child, idx) => {
+        if (!connectedStrategies.includes(idx)) {
+          child.style.display = 'none';
+        } else {
+          child.style.display = 'block';
+        }
+      });
+    }
+
+    // Handle outcome columns: only filter if no strategy is already clicked
+    if (!clickedStrategy) {
+      // Collect all outcomes from connected strategies
+      const allConnectedOutcomes = {
+        pbcComponents: new Set(),
+        outputs: new Set(),
+        immediateOutputs: new Set(),
+        intermediateOutputs: new Set(),
+        longTermOutputs: new Set()
+      };
+      
+      connectedStrategies.forEach(strategyIdx => {
+        const strategy = strategyValues[strategyIdx];
+        if (strategy.pbcComponents) strategy.pbcComponents.forEach(idx => allConnectedOutcomes.pbcComponents.add(idx));
+        if (strategy.outputs) strategy.outputs.forEach(idx => allConnectedOutcomes.outputs.add(idx));
+        if (strategy.immediateOutputs) strategy.immediateOutputs.forEach(idx => allConnectedOutcomes.immediateOutputs.add(idx));
+        if (strategy.intermediateOutputs) strategy.intermediateOutputs.forEach(idx => allConnectedOutcomes.intermediateOutputs.add(idx));
+        if (strategy.longTermOutputs) strategy.longTermOutputs.forEach(idx => allConnectedOutcomes.longTermOutputs.add(idx));
+      });
+
+      // Filter outcome columns to only show connected outcomes
+      const filterOutcomeColumn = (columnId, connectedSet) => {
+        const column = document.getElementById(columnId);
+        const columnChildren = column.getElementsByClassName(`${namespace}-data-wrapper`);
+        [...columnChildren].forEach((child, idx) => {
+          if (connectedSet.has(idx)) {
+            child.style.display = 'block';
+          } else {
+            child.style.display = 'none';
+          }
+        });
+      };
+
+      filterOutcomeColumn(pbcComponentsId, allConnectedOutcomes.pbcComponents);
+      filterOutcomeColumn(outputsId, allConnectedOutcomes.outputs);
+      filterOutcomeColumn(immediateOutputsId, allConnectedOutcomes.immediateOutputs);
+      filterOutcomeColumn(intermediateOutputsId, allConnectedOutcomes.intermediateOutputs);
+      filterOutcomeColumn(longTermOutputsId, allConnectedOutcomes.longTermOutputs);
+    }
+
+    // Show the reset buttons
+    seeAllPartnersButton.style.display = 'block';
+    seeAllButton.style.display = 'block';
+    
+    // Show the "Show all Strategies for this Partner" button only if a strategy is also filtered
+    if (clickedStrategy) {
+      showAllPartnerStrategiesButton.style.display = 'block';
+    }
   };
 
   const addDataToColumn = (data, columnId, tooltips) => {
@@ -1262,9 +1472,6 @@ window.onload = async function () {
       wrapperDiv.appendChild(dataDiv);
 
       if (columnId === strategiesId) {
-        dataDiv.onmouseenter = highlightStrategyOutcomes(i);
-        dataDiv.onmouseleave = removeColumnHighlights;
-
         const button = document.createElement('button');
         button.className = `${textClass} ${namespace}-button`;
         button.textContent = datum;
@@ -1289,9 +1496,15 @@ window.onload = async function () {
           addTooltip(textDiv, tooltips[i], dashboardWrapper);
         }
         
+        // Add click functionality for Partners column
+        if (columnId === partnersId) {
+          dataDiv.onclick = filterToPartner(i);
+          dataDiv.style.cursor = 'pointer';
+        }
+        
         // Add hover functionality for non-strategy columns
         const highlightRelatedStrategies = () => {
-          if (clickedStrategy) return;
+          if (clickedStrategy || clickedPartner) return;
           
           // Find strategies that are connected to this item
           const connectedStrategies = [];
@@ -1399,7 +1612,7 @@ window.onload = async function () {
         };
         
         const removeItemHighlights = () => {
-          if (clickedStrategy) return;
+          if (clickedStrategy || clickedPartner) return;
           
           // Remove highlight from hovered item
           if (columnId === partnersId && textDiv.hasAttribute('data-pbc-colored')) {
@@ -1457,14 +1670,20 @@ window.onload = async function () {
           }
         };
         
-        dataDiv.onmouseenter = highlightRelatedStrategies;
-        dataDiv.onmouseleave = removeItemHighlights;
+        // Add hover events (only for non-strategy and non-partner columns)
+        if (columnId !== partnersId) {
+          dataDiv.onmouseenter = highlightRelatedStrategies;
+          dataDiv.onmouseleave = removeItemHighlights;
+        }
       }
     });
   };
 
   const strategiesColumn = document.getElementById(strategiesId);
+  const partnersColumn = document.getElementById(partnersId);
   const seeAllButton = document.createElement('button');
+  const seeAllPartnersButton = document.createElement('button');
+  const showAllPartnerStrategiesButton = document.createElement('button');
 
   addDataToColumn(data.pbcComponents, pbcComponentsId);
   addDataToColumn(data.partners, partnersId);
@@ -1475,6 +1694,130 @@ window.onload = async function () {
   seeAllButton.textContent = 'See All Strategies';
   strategiesColumn.appendChild(seeAllButton);
   seeAllButton.onclick = unfilterColumns;
+
+  showAllPartnerStrategiesButton.className = `${namespace}-see-all`;
+  showAllPartnerStrategiesButton.style.display = 'none';
+  showAllPartnerStrategiesButton.textContent = 'Show all Strategies for this Partner';
+  showAllPartnerStrategiesButton.style.marginTop = '10px';
+  strategiesColumn.appendChild(showAllPartnerStrategiesButton);
+  
+  // Create function to show all strategies for current partner
+  const showAllPartnerStrategies = () => {
+    if (!clickedPartner) return;
+    
+    // Clear strategy filter but keep partner filter
+    clickedStrategy = false;
+    
+    // Find the currently selected partner
+    const partnersColumn = document.getElementById(partnersId);
+    const partnersChildren = partnersColumn.getElementsByClassName(`${namespace}-data-wrapper`);
+    let selectedPartnerIndex = -1;
+    
+    [...partnersChildren].forEach((child, idx) => {
+      if (child.style.display !== 'none') {
+        selectedPartnerIndex = idx;
+      }
+    });
+    
+    if (selectedPartnerIndex === -1) return;
+    
+    // Find all strategies connected to this partner
+    const connectedStrategies = [];
+    strategyValues.forEach((strategy, strategyIdx) => {
+      if (strategy.partners && strategy.partners.includes(selectedPartnerIndex)) {
+        connectedStrategies.push(strategyIdx);
+      }
+    });
+    
+    // Show all connected strategies
+    const strategiesChildren = strategiesColumn.getElementsByClassName(`${namespace}-data-wrapper`);
+    [...strategiesChildren].forEach((child, idx) => {
+      if (!connectedStrategies.includes(idx)) {
+        child.style.display = 'none';
+      } else {
+        child.style.display = 'block';
+      }
+    });
+    
+    // Collect all outcomes from connected strategies
+    const allConnectedOutcomes = {
+      pbcComponents: new Set(),
+      outputs: new Set(),
+      immediateOutputs: new Set(),
+      intermediateOutputs: new Set(),
+      longTermOutputs: new Set()
+    };
+    
+    connectedStrategies.forEach(strategyIdx => {
+      const strategy = strategyValues[strategyIdx];
+      if (strategy.pbcComponents) strategy.pbcComponents.forEach(idx => allConnectedOutcomes.pbcComponents.add(idx));
+      if (strategy.outputs) strategy.outputs.forEach(idx => allConnectedOutcomes.outputs.add(idx));
+      if (strategy.immediateOutputs) strategy.immediateOutputs.forEach(idx => allConnectedOutcomes.immediateOutputs.add(idx));
+      if (strategy.intermediateOutputs) strategy.intermediateOutputs.forEach(idx => allConnectedOutcomes.intermediateOutputs.add(idx));
+      if (strategy.longTermOutputs) strategy.longTermOutputs.forEach(idx => allConnectedOutcomes.longTermOutputs.add(idx));
+    });
+
+    // Filter outcome columns to show all connected outcomes
+    const filterOutcomeColumn = (columnId, connectedSet) => {
+      const column = document.getElementById(columnId);
+      const columnChildren = column.getElementsByClassName(`${namespace}-data-wrapper`);
+      [...columnChildren].forEach((child, idx) => {
+        if (connectedSet.has(idx)) {
+          child.style.display = 'block';
+        } else {
+          child.style.display = 'none';
+        }
+      });
+    };
+
+    filterOutcomeColumn(pbcComponentsId, allConnectedOutcomes.pbcComponents);
+    filterOutcomeColumn(outputsId, allConnectedOutcomes.outputs);
+    filterOutcomeColumn(immediateOutputsId, allConnectedOutcomes.immediateOutputs);
+    filterOutcomeColumn(intermediateOutputsId, allConnectedOutcomes.intermediateOutputs);
+    filterOutcomeColumn(longTermOutputsId, allConnectedOutcomes.longTermOutputs);
+    
+    // Hide this button since we're now showing all strategies for the partner
+    showAllPartnerStrategiesButton.style.display = 'none';
+    
+    // Apply highlighting to show the connections for the partner
+    const firstConnectedStrategyIdx = connectedStrategies[0];
+    const highlightColor = firstConnectedStrategyIdx !== undefined 
+      ? getStrategyPBCColor(firstConnectedStrategyIdx)
+      : columns[partnersId].columnColor;
+    
+    // Highlight the strategies (reuse existing strategiesChildren variable)
+    connectedStrategies.forEach(strategyIdx => {
+      if (strategiesChildren[strategyIdx]) {
+        const strategyColor = getStrategyPBCColor(strategyIdx);
+        strategiesChildren[strategyIdx].style.background = `${strategyColor}80`;
+      }
+    });
+    
+    // Highlight the outcome columns
+    const highlightOutcomeSet = (columnId, outcomeSet) => {
+      const column = document.getElementById(columnId);
+      const columnChildren = column.getElementsByClassName(textClass);
+      Array.from(outcomeSet).forEach(idx => {
+        if (columnChildren[idx]) {
+          columnChildren[idx].style.background = `${highlightColor}80`;
+        }
+      });
+    };
+    
+    highlightOutcomeSet(pbcComponentsId, allConnectedOutcomes.pbcComponents);
+    highlightOutcomeSet(outputsId, allConnectedOutcomes.outputs);
+    highlightOutcomeSet(immediateOutputsId, allConnectedOutcomes.immediateOutputs);
+    highlightOutcomeSet(intermediateOutputsId, allConnectedOutcomes.intermediateOutputs);
+    highlightOutcomeSet(longTermOutputsId, allConnectedOutcomes.longTermOutputs);
+  };
+  
+  showAllPartnerStrategiesButton.onclick = showAllPartnerStrategies;
+
+  seeAllPartnersButton.className = `${namespace}-see-all`;
+  seeAllPartnersButton.style.display = 'none';
+  seeAllPartnersButton.textContent = 'See All Partners';
+  partnersColumn.appendChild(seeAllPartnersButton);
+  seeAllPartnersButton.onclick = unfilterColumns;
 
   addDataToColumn(data.outputs, outputsId);
   addDataToColumn(data.immediateOutputs, immediateOutputsId);
