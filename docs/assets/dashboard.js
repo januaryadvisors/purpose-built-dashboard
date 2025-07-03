@@ -602,6 +602,46 @@ window.onload = async function () {
               if (dataKey === 'pbcComponents') {
                 console.log('🔄 Filtering Partners column from PBC Components');
                 filterPartnersFromPBC();
+                
+                // Show "See All" buttons when PBC component is selected
+                if (selectedItems.size > 0) {
+                  seeAllButton.style.display = 'block';
+                  seeAllPartnersButton.style.display = 'block';
+                  
+                  // Highlight visible outcome items when PBC component is selected
+                  const selectedPBCItem = Array.from(selectedItems)[0]; // Get the first (and only, since exclusive) selected PBC
+                  const pbcColor = getPBCColor(selectedPBCItem);
+                  
+                  // Highlight visible items in outcome columns
+                  [outputsId, immediateOutputsId, intermediateOutputsId, longTermOutputsId].forEach(columnId => {
+                    const column = document.getElementById(columnId);
+                    if (column) {
+                      const columnChildren = column.getElementsByClassName(`${namespace}-data-wrapper`);
+                      [...columnChildren].forEach(child => {
+                        if (child.style.display !== 'none') {
+                          const textElement = child.querySelector(`.${textClass}`);
+                          if (textElement) {
+                            textElement.style.background = `${pbcColor}80`;
+                          }
+                        }
+                      });
+                    }
+                  });
+                  
+                  // Also highlight visible strategies
+                  const strategiesColumn = document.getElementById(strategiesId);
+                  if (strategiesColumn) {
+                    const strategiesChildren = strategiesColumn.getElementsByClassName(`${namespace}-data-wrapper`);
+                    [...strategiesChildren].forEach(child => {
+                      if (child.style.display !== 'none') {
+                        child.style.background = `${pbcColor}80`;
+                      }
+                    });
+                  }
+                } else {
+                  seeAllButton.style.display = 'none';
+                  seeAllPartnersButton.style.display = 'none';
+                }
               }
             });
           
@@ -1288,6 +1328,16 @@ window.onload = async function () {
   const unfilterColumns = () => {
     clickedStrategy = false;
     clickedPartner = false;
+    
+    // Clear PBC Component selections in the top filter
+    const pbcHorizontalBar = document.getElementById(`${namespace}-horizontal-pbcComponents`);
+    if (pbcHorizontalBar && pbcHorizontalBar.style.display !== 'none') {
+      const selectedPBCButtons = pbcHorizontalBar.querySelectorAll('div.selected');
+      selectedPBCButtons.forEach(button => {
+        button.classList.remove('selected');
+      });
+    }
+    
     [pbcComponentsId, partnersId, strategiesId, outputsId, immediateOutputsId, intermediateOutputsId, longTermOutputsId].forEach(columnId => {
       const column = document.getElementById(columnId);
       const columnChildren = column.getElementsByClassName(`${namespace}-data-wrapper`);
@@ -1306,6 +1356,10 @@ window.onload = async function () {
         });
       });
     });
+    
+    // Clear Partner column colors
+    clearPartnerColumnColors();
+    
     seeAllButton.style.display = 'none';
     seeAllPartnersButton.style.display = 'none';
     showAllPartnerStrategiesButton.style.display = 'none';
