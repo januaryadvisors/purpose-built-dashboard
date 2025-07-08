@@ -67,7 +67,7 @@ window.onload = async function () {
   const intermediateOutputsId = `${namespace}-intermediate-outputs`;
   const longTermOutputsId = `${namespace}-long-term-outputs`;
 
-  const brandGradient = ['#fbcdb0', '#f8A97d', '#f5844a', '#f65c2c', '#D75027', '#b84521', '#9a3b1c'];
+  const brandGradient = ['#A8A8A8', '#D1E9E6', '#92E2DA', '#01A997', '#006C69', '#3DAF49', '#207429'];
 
   const dashboardWrapper = addElement(dashboard, 'div', 'body-wrapper');
   
@@ -107,12 +107,15 @@ window.onload = async function () {
   // Holds whether or not a partner has been clicked
   let clickedPartner = false;
 
+  // Track selected items for filtering (used by PBC Components horizontal bar)
+  let selectedItems = new Set();
+
   // PBC Component color palette - expanded to support more components
   const pbcColorPalette = [
-    '#7B8FC5', // Blue (Economic Vitality)
-    '#7ED7A2', // Green (Education)
-    '#E5B8A0', // Orange/Peach (Community Vibrancy)
-    '#C08FC5', // Purple (fourth component)
+    '#E55525', // Blue (Economic Vitality)
+    '#C49730', // Green (Education)
+    '#2A5384', // Orange/Peach (Community Vibrancy)
+    '#582D60', // Purple (fourth component)
     '#F2D480', // Yellow (fifth component if needed)
     '#8FB8C5', // Light Blue (sixth component if needed)
   ];
@@ -363,9 +366,6 @@ window.onload = async function () {
     // Check if horizontal bar already exists
     let horizontalBar = document.getElementById(`${namespace}-horizontal-${dataKey}`);
     
-    // Track selected items for filtering
-    let selectedItems = new Set();
-    
     // Function to filter strategies based on selected items
     const filterStrategiesByItems = () => {
       const strategiesColumn = document.getElementById(strategiesId);
@@ -550,7 +550,7 @@ window.onload = async function () {
         titleDiv.style.marginBottom = '10px';
         titleDiv.style.width = '100%';
         titleDiv.style.color = brandGradient[colorIndex];
-        titleDiv.textContent = `${columnLabel} (click to filter strategies):`;
+        titleDiv.textContent = `${columnLabel} (click to filter pillars):`;
         
         // Add items as clickable toggle buttons
         data[dataKey].forEach(item => {
@@ -1059,11 +1059,6 @@ window.onload = async function () {
       const intermediateOutputs = getUnique(model, 'Intermediate Outcomes');
       const longTermOutputs = getUnique(model, 'Long-term Outcomes');
 
-      console.log('🔍 EXTRACTED UNIQUE VALUES:');
-      console.log('📊 PBC Components:', pbcComponents);
-      console.log('👥 Partners:', partners);
-      console.log('🎯 Strategies count:', model.length);
-
       // Build strategies object
       const strategies = Object.fromEntries(
         model.map(row => [
@@ -1078,8 +1073,9 @@ window.onload = async function () {
             intermediateOutputs: arrayify(row['Intermediate Outcomes']).map(output =>
               intermediateOutputs.indexOf(output),
             ),
-            // All long term outputs are associated with every strategy
-            longTermOutputs: longTermOutputs.map((_, i) => i),
+            longTermOutputs: arrayify(row['Long-term Outcomes']).map(output =>
+              longTermOutputs.indexOf(output),
+            ),
             partners: arrayify(row.Partners).map(partner => partners.indexOf(partner)),
             pbcComponents: arrayify(row['PBC Component'] || '').map(component => pbcComponents.indexOf(component)),
             research: [],
@@ -1603,7 +1599,34 @@ window.onload = async function () {
         const button = document.createElement('button');
         button.className = `${textClass} ${namespace}-button`;
         button.textContent = datum;
+        button.style.paddingTop = '14px'; // Extra padding to make room for the pill
         dataDiv.appendChild(button);
+
+        // Create colored pill for PBC component in top left of strategy box
+        const dotSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        dotSvg.setAttribute('width', '16');
+        dotSvg.setAttribute('height', '8');
+        dotSvg.setAttribute('viewBox', '0 0 16 8');
+        dotSvg.style.position = 'absolute';
+        dotSvg.style.top = '8px';
+        dotSvg.style.left = '8px';
+        dotSvg.style.zIndex = '10';
+        dotSvg.style.marginBottom = '8px';
+        
+        const dotPill = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+        dotPill.setAttribute('x', '0');
+        dotPill.setAttribute('y', '0');
+        dotPill.setAttribute('width', '16');
+        dotPill.setAttribute('height', '8');
+        dotPill.setAttribute('rx', '4');
+        dotPill.setAttribute('ry', '4');
+        dotPill.setAttribute('fill', getStrategyPBCColor(i));
+        
+        dotSvg.appendChild(dotPill);
+        
+        // Make dataDiv relatively positioned to contain the absolute dot
+        dataDiv.style.position = 'relative';
+        dataDiv.appendChild(dotSvg);
 
         const filterButtonWrapper = document.createElement('div');
         filterButtonWrapper.className = `${namespace}-filter-button-wrapper`;
@@ -1829,6 +1852,9 @@ window.onload = async function () {
   const showAllPartnerStrategies = () => {
     if (!clickedPartner) return;
     
+    // Clear selectedItems when showing all partner strategies
+    selectedItems.clear();
+    
     // Clear strategy filter but keep partner filter
     clickedStrategy = false;
     
@@ -1931,6 +1957,9 @@ window.onload = async function () {
   // Create function to show all strategies for current PBC component
   const showAllPBCStrategies = () => {
     if (!clickedStrategy) return;
+    
+    // Clear selectedItems when showing all PBC strategies
+    selectedItems.clear();
     
     // Find the currently selected strategy
     const strategiesChildren = strategiesColumn.getElementsByClassName(`${namespace}-data-wrapper`);
