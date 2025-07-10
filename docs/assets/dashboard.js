@@ -1587,6 +1587,44 @@ window.onload = async function () {
     filterColumn(strategyValues[i], 'intermediateOutputs', intermediateOutputsId);
     filterColumn(strategyValues[i], 'longTermOutputs', longTermOutputsId);
 
+    // Apply brand gradient based on the selected strategy's PBC component
+    const selectedStrategy = strategyValues[i];
+    if (selectedStrategy.pbcComponents && selectedStrategy.pbcComponents.length > 0) {
+      // Get the primary PBC component for branding
+      const primaryPBCIndex = selectedStrategy.pbcComponents[0];
+      const primaryPBCComponent = data.pbcComponents[primaryPBCIndex];
+      const primaryPBCColor = getPBCColor(primaryPBCComponent);
+      
+      console.log(`🎨 Strategy "${selectedStrategy.label}" - Applying brand gradient for PBC component: "${primaryPBCComponent}"`);
+      
+      // Apply brand gradient based on the primary PBC component
+      const newGradient = generatePBCGradient(primaryPBCColor);
+      updateBrandGradient(newGradient);
+      
+      // Highlight the corresponding PBC component in the horizontal filter
+      const pbcHorizontalBar = document.getElementById(`${namespace}-horizontal-pbcComponents`);
+      if (pbcHorizontalBar) {
+        // First, clear any existing selections
+        const allPBCButtons = pbcHorizontalBar.querySelectorAll('div');
+        allPBCButtons.forEach(button => {
+          if (button.textContent && button.classList.contains('selected')) {
+            button.classList.remove('selected');
+            const buttonPBCColor = getPBCColor(button.textContent);
+            button.style.backgroundColor = `${buttonPBCColor}20`;
+          }
+        });
+        
+        // Then highlight the primary PBC component
+        allPBCButtons.forEach(button => {
+          if (button.textContent === primaryPBCComponent) {
+            button.classList.add('selected');
+            button.style.backgroundColor = `${primaryPBCColor}80`;
+            console.log(`🟢 Highlighted PBC component button: "${primaryPBCComponent}"`);
+          }
+        });
+      }
+    }
+
     // Show the reset button
     seeAllButton.style.display = 'block';
     
@@ -1962,6 +2000,21 @@ window.onload = async function () {
     // Clear selectedItems when showing all partner strategies
     selectedItems.clear();
     
+    // Reset brand gradient to original colors since we're not focusing on a specific PBC component
+    updateBrandGradient(originalBrandGradient);
+    console.log(`🎨 Reset to original brand gradient for partner strategies view`);
+    
+    // Clear any PBC component selections in the horizontal filter
+    const pbcHorizontalBar = document.getElementById(`${namespace}-horizontal-pbcComponents`);
+    if (pbcHorizontalBar) {
+      const allPBCButtons = pbcHorizontalBar.querySelectorAll('div.selected');
+      allPBCButtons.forEach(button => {
+        button.classList.remove('selected');
+        const buttonPBCColor = getPBCColor(button.textContent);
+        button.style.backgroundColor = `${buttonPBCColor}20`;
+      });
+    }
+    
     // Clear strategy filter but keep partner filter
     clickedStrategy = false;
     
@@ -2035,6 +2088,9 @@ window.onload = async function () {
     
     // Hide this button since we're now showing all strategies for the partner
     showAllPartnerStrategiesButton.style.display = 'none';
+    
+    // Also hide the PBC strategies button since partner may span multiple PBC components
+    showAllPBCStrategiesButton.style.display = 'none';
     
     // Clear all background colors from table items
     [pbcComponentsId, partnersId, strategiesId, outputsId, immediateOutputsId, intermediateOutputsId, longTermOutputsId].forEach(columnId => {
