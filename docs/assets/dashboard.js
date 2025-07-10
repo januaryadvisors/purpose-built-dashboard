@@ -67,34 +67,15 @@ window.onload = async function () {
   const intermediateOutputsId = `${namespace}-intermediate-outputs`;
   const longTermOutputsId = `${namespace}-long-term-outputs`;
 
-  const brandGradient = ['#A8A8A8', '#D1E9E6', '#92E2DA', '#01A997', '#006C69', '#3DAF49', '#207429'];
+  // Original brand gradient - stored for resetting
+  const originalBrandGradient = ['#A8A8A8', '#D1E9E6', '#92E2DA', '#01A997', '#006C69', '#3DAF49', '#207429'];
+  
+  // Current brand gradient - will be modified based on selected PBC component
+  let brandGradient = [...originalBrandGradient];
 
   const dashboardWrapper = addElement(dashboard, 'div', 'body-wrapper');
   
-  // Add controls section for the checkbox
-  const controlsWrapper = addElement(dashboardWrapper, 'div', 'controls-wrapper');
-  controlsWrapper.style.marginBottom = '20px';
-  controlsWrapper.style.padding = '10px';
-  controlsWrapper.style.backgroundColor = '#f5f5f5';
-  controlsWrapper.style.borderRadius = '5px';
-  controlsWrapper.style.display = 'flex';
-  controlsWrapper.style.gap = '20px';
-  controlsWrapper.style.flexWrap = 'wrap';
-  
-  // PBC Components checkbox
-  const pbcCheckboxLabel = addElement(controlsWrapper, 'label');
-  pbcCheckboxLabel.style.display = 'flex';
-  pbcCheckboxLabel.style.alignItems = 'center';
-  pbcCheckboxLabel.style.gap = '8px';
-  pbcCheckboxLabel.style.fontSize = '14px';
-  
-  const pbcCheckbox = addElement(pbcCheckboxLabel, 'input');
-  pbcCheckbox.type = 'checkbox';
-  pbcCheckbox.id = `${namespace}-hide-pbc-components`;
-  pbcCheckbox.checked = true;
-  
-  const pbcCheckboxText = addElement(pbcCheckboxLabel, 'span');
-  pbcCheckboxText.textContent = 'Hide PBC Components Column';
+
   
   const headersWrapper = addElement(dashboardWrapper, 'div', 'header-wrapper');
   const columnsWrapper = addElement(dashboardWrapper, 'div', 'columns-wrapper');
@@ -159,6 +140,112 @@ window.onload = async function () {
     const b = Math.round((b1 + b2) / 2);
     
     return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
+  };
+
+  // Function to generate gradient colors based on a base PBC component color
+  const generatePBCGradient = (baseColor) => {
+    // Remove # if present
+    const cleanColor = baseColor.replace('#', '');
+    
+    // Parse RGB components
+    const r = parseInt(cleanColor.substr(0, 2), 16);
+    const g = parseInt(cleanColor.substr(2, 2), 16);
+    const b = parseInt(cleanColor.substr(4, 2), 16);
+    
+    // Create a gradient from light to dark based on the base color
+    const generateShade = (baseR, baseG, baseB, factor) => {
+      const newR = Math.round(Math.min(255, Math.max(0, baseR + (255 - baseR) * factor)));
+      const newG = Math.round(Math.min(255, Math.max(0, baseG + (255 - baseG) * factor)));
+      const newB = Math.round(Math.min(255, Math.max(0, baseB + (255 - baseB) * factor)));
+      return `#${newR.toString(16).padStart(2, '0')}${newG.toString(16).padStart(2, '0')}${newB.toString(16).padStart(2, '0')}`;
+    };
+    
+    // Generate a complementary darker shade for variety
+    const generateDarkShade = (baseR, baseG, baseB, factor) => {
+      const newR = Math.round(Math.max(0, baseR * factor));
+      const newG = Math.round(Math.max(0, baseG * factor));
+      const newB = Math.round(Math.max(0, baseB * factor));
+      return `#${newR.toString(16).padStart(2, '0')}${newG.toString(16).padStart(2, '0')}${newB.toString(16).padStart(2, '0')}`;
+    };
+    
+    return [
+      generateShade(r, g, b, 0.7),    // Lightest - PBC Components
+      generateShade(r, g, b, 0.5),    // Light - Partners  
+      generateShade(r, g, b, 0.3),    // Medium-light - Strategies
+      baseColor,                      // Base color - Outputs
+      generateDarkShade(r, g, b, 0.8), // Medium-dark - Immediate Outcomes
+      generateDarkShade(r, g, b, 0.6), // Dark - Intermediate Outcomes
+      generateDarkShade(r, g, b, 0.4)  // Darkest - Long-Term Outcomes
+    ];
+  };
+
+  // Function to update all UI elements with the new brand gradient
+  const updateBrandGradient = (newGradient) => {
+    brandGradient = [...newGradient];
+    
+    // Update column colors in the columns object
+    const columnIds = [pbcComponentsId, partnersId, strategiesId, outputsId, immediateOutputsId, intermediateOutputsId, longTermOutputsId];
+    columnIds.forEach((columnId, index) => {
+      if (columns[columnId]) {
+        columns[columnId].columnColor = brandGradient[index];
+      }
+    });
+    
+    // Update existing header elements
+    const headerElements = document.querySelectorAll(`.${namespace}-header`);
+    headerElements.forEach((headerEl, index) => {
+      const labelWrapper = headerEl.querySelector(`.${namespace}-header-label-wrapper`);
+      if (labelWrapper) {
+        labelWrapper.style.background = brandGradient[index];
+      }
+      
+      // Update arrow colors
+      const leftArrow = headerEl.querySelector('svg polygon');
+      if (leftArrow) {
+        leftArrow.setAttribute('fill', brandGradient[index]);
+      }
+      
+      const rightArrow = headerEl.querySelectorAll('svg polygon')[1];
+      if (rightArrow) {
+        rightArrow.setAttribute('fill', brandGradient[index]);
+      }
+    });
+    
+    // Update column wrapper borders and backgrounds
+    const columnWrappers = document.querySelectorAll(`.${namespace}-column-wrapper`);
+    columnWrappers.forEach((wrapper, index) => {
+      if (brandGradient[index]) {
+        wrapper.style.border = `1px solid ${brandGradient[index]}80`;
+        wrapper.style.background = `${brandGradient[index]}1A`;
+      }
+    });
+    
+    // Update data wrapper borders within each column
+    columnIds.forEach((columnId, index) => {
+      const column = document.getElementById(columnId);
+      if (column && brandGradient[index]) {
+        const dataWrappers = column.querySelectorAll(`.${namespace}-data-wrapper`);
+        dataWrappers.forEach((wrapper, dataIndex, arr) => {
+          if (dataIndex !== arr.length - 1) { // Don't add border to last item
+            wrapper.style.borderBottom = `1px solid ${brandGradient[index]}80`;
+          }
+        });
+      }
+    });
+    
+    // Update horizontal bar styling if it exists
+    const pbcHorizontalBar = document.getElementById(`${namespace}-horizontal-pbcComponents`);
+    if (pbcHorizontalBar) {
+      pbcHorizontalBar.style.backgroundColor = brandGradient[0] + '1A';
+      pbcHorizontalBar.style.border = `2px solid ${brandGradient[0]}80`;
+      
+      const titleDiv = pbcHorizontalBar.querySelector('div');
+      if (titleDiv && titleDiv.style.fontWeight === 'bold') {
+        titleDiv.style.color = brandGradient[0];
+      }
+    }
+    
+    console.log('🎨 Updated brand gradient:', brandGradient);
   };
 
   // Function to filter Partners column based on selected PBC Components
@@ -394,6 +481,8 @@ window.onload = async function () {
         // Clear Partner column colors when no PBC Components are selected
         if (dataKey === 'pbcComponents') {
           clearPartnerColumnColors();
+          // Reset brand gradient to original colors when no PBC components are selected
+          updateBrandGradient(originalBrandGradient);
         }
         
         return;
@@ -401,10 +490,17 @@ window.onload = async function () {
       
       // Get visible strategies
       const visibleStrategies = [];
+      console.log(`🔍 Filtering strategies based on selected ${dataKey}:`, Array.from(selectedItems));
+      
       [...strategiesChildren].forEach((child, idx) => {
         const strategy = strategyValues[idx];
         const strategyItems = strategy[dataKey] ? strategy[dataKey].map(itemIdx => data[dataKey][itemIdx]) : [];
         const hasSelectedItem = strategyItems.some(item => selectedItems.has(item));
+        
+        // Debug logging for PBC components
+        if (dataKey === 'pbcComponents') {
+          console.log(`📊 Strategy "${strategy.label}": PBC Components = [${strategyItems.join(', ')}], hasSelectedItem = ${hasSelectedItem}`);
+        }
         
         if (hasSelectedItem) {
           visibleStrategies.push(strategy);
@@ -413,6 +509,8 @@ window.onload = async function () {
           child.style.display = 'none';
         }
       });
+      
+      console.log(`✅ Visible strategies after filtering: ${visibleStrategies.length} out of ${strategiesChildren.length}`);
       
       // Filter other columns based on visible strategies
       const filterColumnByStrategies = (columnId, dataKey) => {
@@ -604,6 +702,11 @@ window.onload = async function () {
                   }
                   
                   console.log(`🔴 Deselected ${dataKey}: ${item}`);
+                  
+                  // Reset to original brand gradient when PBC component is deselected
+                  if (dataKey === 'pbcComponents') {
+                    updateBrandGradient(originalBrandGradient);
+                  }
                 } else {
                   // First, deselect all other PBC Components
                   const allPBCButtons = horizontalBar.querySelectorAll('div');
@@ -628,6 +731,13 @@ window.onload = async function () {
                   if (dataKey === 'pbcComponents') {
                     const pbcColor = getPBCColor(item);
                     itemDiv.style.backgroundColor = `${pbcColor}80`;
+                    
+                    // Update brand gradient based on selected PBC component
+                    const newGradient = generatePBCGradient(pbcColor);
+                    updateBrandGradient(newGradient);
+                    
+                    console.log(`🎯 PBC Component selected: "${item}"`);
+                    console.log(`📦 Current selectedItems:`, Array.from(selectedItems));
                   }
                   
                   console.log(`🟢 Selected ${dataKey}: ${item} (exclusive)`);
@@ -649,12 +759,8 @@ window.onload = async function () {
               
               filterStrategiesByItems();
               
-              // Filter Partners column based on selected PBC Components
+              // Show "See All" buttons when PBC component is selected
               if (dataKey === 'pbcComponents') {
-                console.log('🔄 Filtering Partners column from PBC Components');
-                filterPartnersFromPBC();
-                
-                // Show "See All" buttons when PBC component is selected
                 if (selectedItems.size > 0) {
                   seeAllButton.style.display = 'block';
                   seeAllPartnersButton.style.display = 'block';
@@ -708,11 +814,6 @@ window.onload = async function () {
       });
     }
   };
-
-  // Add event listener for checkbox
-  pbcCheckbox.addEventListener('change', (e) => {
-    toggleColumn(pbcComponentsId, 'PBC Components', 'pbcComponents', 0, e.target.checked);
-  });
 
   // Create our modal element
   const createModal = () => {
@@ -1381,6 +1482,9 @@ window.onload = async function () {
     clickedStrategy = false;
     clickedPartner = false;
     
+    // Clear selected items
+    selectedItems.clear();
+    
     // Clear PBC Component selections in the top filter
     const pbcHorizontalBar = document.getElementById(`${namespace}-horizontal-pbcComponents`);
     if (pbcHorizontalBar && pbcHorizontalBar.style.display !== 'none') {
@@ -1428,6 +1532,9 @@ window.onload = async function () {
     
     // Clear Partner column colors
     clearPartnerColumnColors();
+    
+    // Reset brand gradient to original colors
+    updateBrandGradient(originalBrandGradient);
     
     seeAllButton.style.display = 'none';
     seeAllPartnersButton.style.display = 'none';
@@ -1604,9 +1711,9 @@ window.onload = async function () {
 
         // Create colored pill for PBC component in top left of strategy box
         const dotSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-        dotSvg.setAttribute('width', '16');
+        dotSvg.setAttribute('width', '60');
         dotSvg.setAttribute('height', '8');
-        dotSvg.setAttribute('viewBox', '0 0 16 8');
+        dotSvg.setAttribute('viewBox', '0 0 60 8');
         dotSvg.style.position = 'absolute';
         dotSvg.style.top = '8px';
         dotSvg.style.left = '8px';
@@ -1616,7 +1723,7 @@ window.onload = async function () {
         const dotPill = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
         dotPill.setAttribute('x', '0');
         dotPill.setAttribute('y', '0');
-        dotPill.setAttribute('width', '16');
+        dotPill.setAttribute('width', '60');
         dotPill.setAttribute('height', '8');
         dotPill.setAttribute('rx', '4');
         dotPill.setAttribute('ry', '4');
@@ -1978,6 +2085,40 @@ window.onload = async function () {
     const strategyPBCComponents = selectedStrategy.pbcComponents || [];
     
     if (strategyPBCComponents.length === 0) return;
+    
+    // Get the primary PBC component for branding
+    const primaryPBCIndex = strategyPBCComponents[0];
+    const primaryPBCComponent = data.pbcComponents[primaryPBCIndex];
+    const primaryPBCColor = getPBCColor(primaryPBCComponent);
+    
+    console.log(`🎨 Applying brand gradient for PBC component: "${primaryPBCComponent}"`);
+    
+    // Apply brand gradient based on the primary PBC component
+    const newGradient = generatePBCGradient(primaryPBCColor);
+    updateBrandGradient(newGradient);
+    
+    // Highlight the corresponding PBC component in the horizontal filter
+    const pbcHorizontalBar = document.getElementById(`${namespace}-horizontal-pbcComponents`);
+    if (pbcHorizontalBar) {
+      // First, clear any existing selections
+      const allPBCButtons = pbcHorizontalBar.querySelectorAll('div');
+      allPBCButtons.forEach(button => {
+        if (button.textContent && button.classList.contains('selected')) {
+          button.classList.remove('selected');
+          const buttonPBCColor = getPBCColor(button.textContent);
+          button.style.backgroundColor = `${buttonPBCColor}20`;
+        }
+      });
+      
+      // Then highlight the primary PBC component
+      allPBCButtons.forEach(button => {
+        if (button.textContent === primaryPBCComponent) {
+          button.classList.add('selected');
+          button.style.backgroundColor = `${primaryPBCColor}80`;
+          console.log(`🟢 Highlighted PBC component button: "${primaryPBCComponent}"`);
+        }
+      });
+    }
     
     // Find all strategies that share any PBC component with the selected strategy
     const connectedStrategies = [];
