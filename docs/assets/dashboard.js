@@ -295,7 +295,6 @@ window.onload = async function () {
     
     // Find all partners that should be visible based on selected PBC Components
     const partnersToShow = new Set();
-    const partnerPBCMapping = new Map(); // partner -> Set of connected PBCs
     
     Object.values(data.strategies).forEach(strategy => {
       const strategyPBCComponents = strategy.pbcComponents ? strategy.pbcComponents.map(idx => data.pbcComponents[idx]) : [];
@@ -306,15 +305,6 @@ window.onload = async function () {
         const strategyPartners = strategy.partners ? strategy.partners.map(idx => data.partners[idx]) : [];
         strategyPartners.forEach(partner => {
           partnersToShow.add(partner);
-          if (!partnerPBCMapping.has(partner)) {
-            partnerPBCMapping.set(partner, new Set());
-          }
-          // Add connected PBC Components for this partner
-          strategyPBCComponents.forEach(pbc => {
-            if (selectedPBCComponents.has(pbc)) {
-              partnerPBCMapping.get(partner).add(pbc);
-            }
-          });
         });
       }
     });
@@ -327,41 +317,6 @@ window.onload = async function () {
       
       if (partnersToShow.has(partner)) {
         child.style.display = 'block';
-        
-        // Apply color coordination based on connected PBC Components
-        const connectedPBCs = Array.from(partnerPBCMapping.get(partner) || []);
-        const partnerItem = child.querySelector(`.${namespace}-datum`);
-        
-        if (partnerItem && connectedPBCs.length > 0) {
-          // Mark this item as PBC-colored for hover preservation
-          partnerItem.setAttribute('data-pbc-colored', 'true');
-          
-          if (connectedPBCs.length === 1) {
-            // Single PBC Component - use that color
-            const pbcColor = getPBCColor(connectedPBCs[0]);
-            partnerItem.style.backgroundColor = pbcColor + '20'; // Light version
-            partnerItem.style.border = `2px solid ${pbcColor}60`;
-            // Store the original styling in data attributes for hover restoration
-            partnerItem.setAttribute('data-original-bg', pbcColor + '20');
-            partnerItem.setAttribute('data-original-border', `2px solid ${pbcColor}60`);
-            console.log(`🎨 Applied ${connectedPBCs[0]} color to visible partner: ${partner}`);
-          } else {
-            // Multiple PBC Components - create gradient background
-            const color1 = getPBCColor(connectedPBCs[0]);
-            const color2 = getPBCColor(connectedPBCs[1]);
-            const gradient = `linear-gradient(135deg, ${color1}20 50%, ${color2}20 50%)`;
-            partnerItem.style.background = gradient;
-            partnerItem.style.border = `2px solid ${color1}60`;
-            // Store the original styling in data attributes for hover restoration
-            partnerItem.setAttribute('data-original-bg', gradient);
-            partnerItem.setAttribute('data-original-border', `2px solid ${color1}60`);
-            console.log(`🌈 Applied gradient background to visible partner: ${partner}`);
-          }
-          partnerItem.style.borderRadius = '4px';
-          partnerItem.style.padding = '4px 8px';
-          partnerItem.setAttribute('data-original-border-radius', '4px');
-          partnerItem.setAttribute('data-original-padding', '4px 8px');
-        }
       } else {
         child.style.display = 'none';
       }
@@ -557,61 +512,6 @@ window.onload = async function () {
             
             if (isConnectedToPBCComponent) {
               child.style.display = 'block';
-              
-              // Apply color coordination based on connected PBC Components
-              const connectedPBCs = new Set();
-              visibleStrategies.forEach(strategy => {
-                if (strategy.partners && strategy.partners.includes(idx)) {
-                  const strategyPBCComponents = strategy.pbcComponents ? strategy.pbcComponents.map(pbcIdx => data.pbcComponents[pbcIdx]) : [];
-                  strategyPBCComponents.forEach(pbc => {
-                    if (selectedItems.has(pbc)) {
-                      connectedPBCs.add(pbc);
-                    }
-                  });
-                }
-              });
-              
-              // Apply color styling to the Partner column item
-              const partnerItem = child.querySelector(`.${namespace}-datum`);
-              if (partnerItem && connectedPBCs.size > 0) {
-                const connectedPBCsArray = Array.from(connectedPBCs);
-                
-                // Mark this item as PBC-colored for hover preservation
-                partnerItem.setAttribute('data-pbc-colored', 'true');
-                
-                if (connectedPBCsArray.length === 1) {
-                  // Single PBC Component - use that color
-                  const pbcColor = getPBCColor(connectedPBCsArray[0]);
-                  partnerItem.style.backgroundColor = pbcColor + '20'; // Light version
-                  partnerItem.style.border = `2px solid ${pbcColor}60`;
-                  // Store the original styling in data attributes for hover restoration
-                  partnerItem.setAttribute('data-original-bg', pbcColor + '20');
-                  partnerItem.setAttribute('data-original-border', `2px solid ${pbcColor}60`);
-                  console.log(`🎨 Applied ${connectedPBCsArray[0]} color to visible partner: ${partner}`);
-                } else {
-                  // Multiple PBC Components - create gradient background
-                  const color1 = getPBCColor(connectedPBCsArray[0]);
-                  const color2 = getPBCColor(connectedPBCsArray[1]);
-                  const gradient = `linear-gradient(135deg, ${color1}20 50%, ${color2}20 50%)`;
-                  partnerItem.style.background = gradient;
-                  partnerItem.style.border = `2px solid ${color1}60`;
-                  // Store the original styling in data attributes for hover restoration
-                  partnerItem.setAttribute('data-original-bg', gradient);
-                  partnerItem.setAttribute('data-original-border', `2px solid ${color1}60`);
-                  console.log(`🌈 Applied gradient background to visible partner: ${partner}`);
-                }
-                partnerItem.style.borderRadius = '4px';
-                partnerItem.style.padding = '4px 8px';
-                partnerItem.setAttribute('data-original-border-radius', '4px');
-                partnerItem.setAttribute('data-original-padding', '4px 8px');
-              } else {
-                // Clear PBC-colored marking if no PBCs connected
-                partnerItem?.removeAttribute('data-pbc-colored');
-                partnerItem?.removeAttribute('data-original-bg');
-                partnerItem?.removeAttribute('data-original-border');
-                partnerItem?.removeAttribute('data-original-border-radius');
-                partnerItem?.removeAttribute('data-original-padding');
-              }
             } else {
               child.style.display = 'none';
             }
@@ -1332,16 +1232,12 @@ window.onload = async function () {
     });
   };
 
-  // Removes column higlights (excluding Partners to preserve PBC Component colors)
+  // Removes column highlights
   const removeColumnHighlights = () => {
-    if (clickedStrategy || clickedPartner) {
-      return;
+    if (clickedStrategy) {
+      return; // Allow hover when only partner is filtered
     }
     columnEls.forEach(columnEl => {
-      // Skip Partners column to preserve PBC Component colors
-      if (columnEl.id === partnersId) {
-        return;
-      }
       const dataChildren = [...columnEl.getElementsByClassName(textClass)];
       dataChildren.forEach(child => {
         child.style.background = 'transparent';
@@ -1364,17 +1260,42 @@ window.onload = async function () {
     return columns[strategiesId].columnColor;
   };
 
+  // Function to get the current theme color for hover highlights based on dashboard state
+  const getCurrentThemeColor = () => {
+    // 1. Check if a PBC component is currently selected from the horizontal filter
+    if (selectedItems.size > 0) {
+      const selectedPBC = Array.from(selectedItems)[0]; // Get the first (and only in exclusive mode) selected PBC
+      return getPBCColor(selectedPBC);
+    }
+    
+    // 2. Check if a specific strategy is currently selected (clickedStrategy = true)
+    if (clickedStrategy) {
+      const strategiesColumn = document.getElementById(strategiesId);
+      const strategiesChildren = strategiesColumn.getElementsByClassName(`${namespace}-data-wrapper`);
+      
+      // Find the currently visible (selected) strategy
+      for (let i = 0; i < strategiesChildren.length; i++) {
+        if (strategiesChildren[i].style.display !== 'none') {
+          return getStrategyPBCColor(i);
+        }
+      }
+    }
+    
+    // 3. Default: return null to indicate individual strategy colors should be used
+    return null;
+  };
+
   const highlightStrategyOutcomes = i => () => {
-    if (clickedStrategy || clickedPartner) {
-      return;
+    if (clickedStrategy) {
+      return; // Allow hover when only partner is filtered
     }
     // This function is now unused - we have custom hover functionality for strategies
     // All highlighting is handled by the individual hover functions in addDataToColumn
   };
 
   const highlightPartnerOutcomes = i => () => {
-    if (clickedStrategy || clickedPartner) {
-      return;
+    if (clickedStrategy) {
+      return; // Allow hover when only partner is filtered
     }
     
     // Find all strategies connected to this partner
@@ -1385,18 +1306,27 @@ window.onload = async function () {
       }
     });
     
-    // Use the first connected strategy's color for highlighting
-    const highlightColor = connectedStrategies.length > 0 
-      ? getStrategyPBCColor(connectedStrategies[0])
-      : columns[partnersId].columnColor;
+    // Determine highlight color: use theme color if available, otherwise use first connected strategy's color
+    const themeColor = getCurrentThemeColor();
+    let highlightColor;
     
-    // Highlight strategies connected to this partner
+    if (themeColor) {
+      // Use the current theme color for consistent highlighting
+      highlightColor = themeColor;
+    } else if (connectedStrategies.length > 0) {
+      // Use the first connected strategy's PBC color
+      highlightColor = getStrategyPBCColor(connectedStrategies[0]);
+    } else {
+      // Fallback to Partners column color
+      highlightColor = columns[partnersId].columnColor;
+    }
+    
+    // Highlight strategies connected to this partner using consistent color
     const strategiesColumn = document.getElementById(strategiesId);
     const strategiesChildren = strategiesColumn.getElementsByClassName(`${namespace}-data-wrapper`);
     connectedStrategies.forEach(strategyIdx => {
       if (strategiesChildren[strategyIdx]) {
-        const strategyColor = getStrategyPBCColor(strategyIdx);
-        strategiesChildren[strategyIdx].style.background = `${strategyColor}80`;
+        strategiesChildren[strategyIdx].style.background = `${highlightColor}80`;
       }
     });
     
@@ -1418,7 +1348,7 @@ window.onload = async function () {
       if (strategy.longTermOutputs) strategy.longTermOutputs.forEach(idx => allConnectedOutcomes.longTermOutputs.add(idx));
     });
     
-    // Highlight the collected outcomes
+    // Highlight the collected outcomes using consistent color
     const highlightOutcomeSet = (columnId, outcomeSet) => {
       const column = document.getElementById(columnId);
       const columnChildren = column.getElementsByClassName(textClass);
@@ -1786,10 +1716,12 @@ window.onload = async function () {
         
         // Add hover functionality to highlight connected outcomes
         const highlightStrategyOutcomes = () => {
-          if (clickedStrategy || clickedPartner) return;
+          if (clickedStrategy) return; // Allow hover when only partner is filtered
           
           const strategy = strategyValues[i];
-          const strategyColor = getStrategyPBCColor(i);
+          // Use theme color if available, otherwise use individual strategy color
+          const themeColor = getCurrentThemeColor();
+          const strategyColor = themeColor || getStrategyPBCColor(i);
           
           // Highlight the strategy itself
           dataDiv.setAttribute('data-original-bg-before-hover', dataDiv.style.background || '');
@@ -1821,7 +1753,7 @@ window.onload = async function () {
         };
         
         const removeStrategyHighlights = () => {
-          if (clickedStrategy || clickedPartner) return;
+          if (clickedStrategy) return; // Allow hover when only partner is filtered
           
           // Restore strategy background
           const originalBg = dataDiv.getAttribute('data-original-bg-before-hover') || '';
@@ -1872,7 +1804,7 @@ window.onload = async function () {
         
                 // Add hover functionality for outcome columns to highlight strategies
         const highlightRelatedStrategies = () => {
-          if (clickedStrategy || clickedPartner) return;
+          if (clickedStrategy) return; // Allow hover when only partner is filtered
           
           // Find strategies that are connected to this item
           const connectedStrategies = [];
@@ -1894,20 +1826,28 @@ window.onload = async function () {
             }
           });
           
+          // Determine highlight color: use theme color if available, otherwise use first connected strategy's color
+          const themeColor = getCurrentThemeColor();
+          let highlightColor;
+          
+          if (themeColor) {
+            // Use the current theme color for consistent highlighting
+            highlightColor = themeColor;
+          } else if (connectedStrategies.length > 0) {
+            // Use the first connected strategy's PBC color
+            const firstStrategyIdx = connectedStrategies[0];
+            highlightColor = getStrategyPBCColor(firstStrategyIdx);
+          } else {
+            // Fallback to Strategy column color if no connected strategies found
+            highlightColor = columns[strategiesId].columnColor;
+          }
+          
           // Highlight the hovered outcome item
           textDiv.setAttribute('data-original-bg-before-hover', textDiv.style.background || '');
           textDiv.setAttribute('data-original-bgcolor-before-hover', textDiv.style.backgroundColor || '');
+          textDiv.style.background = `${highlightColor}80`;
           
-          if (connectedStrategies.length > 0) {
-            const firstStrategyIdx = connectedStrategies[0];
-            const highlightColor = getStrategyPBCColor(firstStrategyIdx);
-            textDiv.style.background = `${highlightColor}80`;
-          } else {
-            // Fallback to Strategy color if no connected strategies found
-            textDiv.style.background = `${columns[strategiesId].columnColor}80`;
-          }
-          
-          // Highlight connected strategies using their PBC Component colors
+          // Highlight connected strategies using the same color for consistency
           const strategiesColumn = document.getElementById(strategiesId);
           const strategiesChildren = strategiesColumn.getElementsByClassName(`${namespace}-data-wrapper`);
           connectedStrategies.forEach(strategyIdx => {
@@ -1915,14 +1855,13 @@ window.onload = async function () {
               // Store original background before highlighting
               strategiesChildren[strategyIdx].setAttribute('data-original-bg-before-hover', strategiesChildren[strategyIdx].style.background || '');
               
-              const strategyColor = getStrategyPBCColor(strategyIdx);
-              strategiesChildren[strategyIdx].style.background = `${strategyColor}80`;
+              strategiesChildren[strategyIdx].style.background = `${highlightColor}80`;
             }
           });
         };
         
         const removeItemHighlights = () => {
-          if (clickedStrategy || clickedPartner) return;
+          if (clickedStrategy) return; // Allow hover when only partner is filtered
           
           // Store original background before hover for restoration
           const originalItemBg = textDiv.getAttribute('data-original-bg-before-hover') || '';
