@@ -657,17 +657,11 @@ window.onload = async function () {
                 }
               }
               
-              filterStrategiesByItems();
-              
-              // Show "See All" buttons when PBC component is selected
+                            filterStrategiesByItems();
+                
+                // Update button visibility when PBC component is selected
               if (dataKey === 'pbcComponents') {
-                if (selectedItems.size > 0) {
-                  seeAllButton.style.display = 'block';
-                  seeAllPartnersButton.style.display = 'block';
-                } else {
-                  seeAllButton.style.display = 'none';
-                  seeAllPartnersButton.style.display = 'none';
-                }
+                updateButtonVisibility();
               }
             });
           
@@ -1245,6 +1239,34 @@ window.onload = async function () {
     });
   };
 
+  // Removes partner hover highlights (both partner and connected strategies)
+  const removePartnerHighlights = () => {
+    if (clickedStrategy) {
+      return; // Allow hover when only partner is filtered
+    }
+    
+    // Clear partner highlights
+    const partnersColumn = document.getElementById(partnersId);
+    if (partnersColumn) {
+      const partnersChildren = partnersColumn.getElementsByClassName(`${namespace}-data-wrapper`);
+      [...partnersChildren].forEach(child => {
+        const partnerTextElement = child.querySelector(`.${textClass}`);
+        if (partnerTextElement) {
+          partnerTextElement.style.background = 'transparent';
+        }
+      });
+    }
+    
+    // Clear strategy wrapper highlights
+    const strategiesColumn = document.getElementById(strategiesId);
+    if (strategiesColumn) {
+      const strategiesChildren = strategiesColumn.getElementsByClassName(`${namespace}-data-wrapper`);
+      [...strategiesChildren].forEach(child => {
+        child.style.background = 'transparent';
+      });
+    }
+  };
+
   const strategyValues = Object.values(data.strategies);
 
   // Function to get the primary PBC Component color for a strategy
@@ -1321,6 +1343,16 @@ window.onload = async function () {
       highlightColor = columns[partnersId].columnColor;
     }
     
+    // Highlight the hovered partner itself
+    const partnersColumn = document.getElementById(partnersId);
+    const partnersChildren = partnersColumn.getElementsByClassName(`${namespace}-data-wrapper`);
+    if (partnersChildren[i]) {
+      const partnerTextElement = partnersChildren[i].querySelector(`.${textClass}`);
+      if (partnerTextElement) {
+        partnerTextElement.style.background = `${highlightColor}80`;
+      }
+    }
+    
     // Highlight strategies connected to this partner using consistent color
     const strategiesColumn = document.getElementById(strategiesId);
     const strategiesChildren = strategiesColumn.getElementsByClassName(`${namespace}-data-wrapper`);
@@ -1329,41 +1361,6 @@ window.onload = async function () {
         strategiesChildren[strategyIdx].style.background = `${highlightColor}80`;
       }
     });
-    
-    // Highlight all outcomes from connected strategies
-    const allConnectedOutcomes = {
-      pbcComponents: new Set(),
-      outputs: new Set(),
-      immediateOutputs: new Set(),
-      intermediateOutputs: new Set(),
-      longTermOutputs: new Set()
-    };
-    
-    connectedStrategies.forEach(strategyIdx => {
-      const strategy = strategyValues[strategyIdx];
-      if (strategy.pbcComponents) strategy.pbcComponents.forEach(idx => allConnectedOutcomes.pbcComponents.add(idx));
-      if (strategy.outputs) strategy.outputs.forEach(idx => allConnectedOutcomes.outputs.add(idx));
-      if (strategy.immediateOutputs) strategy.immediateOutputs.forEach(idx => allConnectedOutcomes.immediateOutputs.add(idx));
-      if (strategy.intermediateOutputs) strategy.intermediateOutputs.forEach(idx => allConnectedOutcomes.intermediateOutputs.add(idx));
-      if (strategy.longTermOutputs) strategy.longTermOutputs.forEach(idx => allConnectedOutcomes.longTermOutputs.add(idx));
-    });
-    
-    // Highlight the collected outcomes using consistent color
-    const highlightOutcomeSet = (columnId, outcomeSet) => {
-      const column = document.getElementById(columnId);
-      const columnChildren = column.getElementsByClassName(textClass);
-      Array.from(outcomeSet).forEach(idx => {
-        if (columnChildren[idx]) {
-          columnChildren[idx].style.background = `${highlightColor}80`;
-        }
-      });
-    };
-    
-    highlightOutcomeSet(pbcComponentsId, allConnectedOutcomes.pbcComponents);
-    highlightOutcomeSet(outputsId, allConnectedOutcomes.outputs);
-    highlightOutcomeSet(immediateOutputsId, allConnectedOutcomes.immediateOutputs);
-    highlightOutcomeSet(intermediateOutputsId, allConnectedOutcomes.intermediateOutputs);
-    highlightOutcomeSet(longTermOutputsId, allConnectedOutcomes.longTermOutputs);
   };
 
   // Function to highlight the directional flow from strategy to outcomes
@@ -1466,10 +1463,7 @@ window.onload = async function () {
     // Reset brand gradient to original colors
     updateBrandGradient(originalBrandGradient);
     
-    seeAllButton.style.display = 'none';
-    seeAllPartnersButton.style.display = 'none';
-    showAllPartnerStrategiesButton.style.display = 'none';
-    showAllPBCStrategiesButton.style.display = 'none';
+    updateButtonVisibility();
   };
 
   const filterToStrategy = i => () => {
@@ -1531,6 +1525,10 @@ window.onload = async function () {
       const newGradient = generatePBCGradient(primaryPBCColor);
       updateBrandGradient(newGradient);
       
+      // Update selectedItems to reflect the strategy's PBC component
+      selectedItems.clear();
+      selectedItems.add(primaryPBCComponent);
+      
       // Highlight the corresponding PBC component in the horizontal filter
       const pbcHorizontalBar = document.getElementById(`${namespace}-horizontal-pbcComponents`);
       if (pbcHorizontalBar) {
@@ -1555,16 +1553,7 @@ window.onload = async function () {
       }
     }
 
-    // Show the reset button
-    seeAllButton.style.display = 'block';
-    
-    // Show the "Show all Strategies for this PBC Component" button
-    showAllPBCStrategiesButton.style.display = 'block';
-    
-    // Show the "Show all Strategies for this Partner" button if a partner is also filtered
-    if (clickedPartner) {
-      showAllPartnerStrategiesButton.style.display = 'block';
-    }
+    updateButtonVisibility();
   };
 
   const filterToPartner = i => () => {
@@ -1648,14 +1637,7 @@ window.onload = async function () {
       filterOutcomeColumn(longTermOutputsId, allConnectedOutcomes.longTermOutputs);
     }
 
-    // Show the reset buttons
-    seeAllPartnersButton.style.display = 'block';
-    seeAllButton.style.display = 'block';
-    
-    // Show the "Show all Strategies for this Partner" button only if a strategy is also filtered
-    if (clickedStrategy) {
-      showAllPartnerStrategiesButton.style.display = 'block';
-    }
+    updateButtonVisibility();
   };
 
   const addDataToColumn = (data, columnId, tooltips) => {
@@ -1677,31 +1659,20 @@ window.onload = async function () {
         button.style.paddingTop = '14px'; // Extra padding to make room for the pill
         dataDiv.appendChild(button);
 
-        // Create colored pill for PBC component in top left of strategy box
-        const dotSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-        dotSvg.setAttribute('width', '60');
-        dotSvg.setAttribute('height', '8');
-        dotSvg.setAttribute('viewBox', '0 0 60 8');
-        dotSvg.style.position = 'absolute';
-        dotSvg.style.top = '8px';
-        dotSvg.style.left = '8px';
-        dotSvg.style.zIndex = '10';
-        dotSvg.style.marginBottom = '8px';
-        
-        const dotPill = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-        dotPill.setAttribute('x', '0');
-        dotPill.setAttribute('y', '0');
-        dotPill.setAttribute('width', '60');
-        dotPill.setAttribute('height', '8');
-        dotPill.setAttribute('rx', '4');
-        dotPill.setAttribute('ry', '4');
-        dotPill.setAttribute('fill', getStrategyPBCColor(i));
-        
-        dotSvg.appendChild(dotPill);
+        // Create colored pill for PBC component spanning full width of strategy box
+        const dotPill = document.createElement('div');
+        dotPill.style.position = 'absolute';
+        dotPill.style.top = '8px';
+        dotPill.style.left = '0';
+        dotPill.style.right = '0';
+        dotPill.style.height = '8px';
+        dotPill.style.backgroundColor = getStrategyPBCColor(i);
+        dotPill.style.borderRadius = '4px';
+        dotPill.style.zIndex = '10';
         
         // Make dataDiv relatively positioned to contain the absolute dot
         dataDiv.style.position = 'relative';
-        dataDiv.appendChild(dotSvg);
+        dataDiv.appendChild(dotPill);
 
         const filterButtonWrapper = document.createElement('div');
         filterButtonWrapper.className = `${namespace}-filter-button-wrapper`;
@@ -1800,6 +1771,10 @@ window.onload = async function () {
         if (columnId === partnersId) {
           dataDiv.onclick = filterToPartner(i);
           dataDiv.style.cursor = 'pointer';
+          
+          // Add hover functionality to highlight connected strategies
+          dataDiv.onmouseenter = highlightPartnerOutcomes(i);
+          dataDiv.onmouseleave = removePartnerHighlights;
         }
         
                 // Add hover functionality for outcome columns to highlight strategies
@@ -1909,6 +1884,7 @@ window.onload = async function () {
   const seeAllPartnersButton = document.createElement('button');
   const showAllPartnerStrategiesButton = document.createElement('button');
   const showAllPBCStrategiesButton = document.createElement('button');
+  const showAllPBCPartnersButton = document.createElement('button');
 
   addDataToColumn(data.pbcComponents, pbcComponentsId);
   addDataToColumn(data.partners, partnersId);
@@ -1932,6 +1908,170 @@ window.onload = async function () {
   showAllPBCStrategiesButton.style.marginTop = '10px';
   strategiesColumn.appendChild(showAllPBCStrategiesButton);
   
+  // Create function to show all partners for current PBC component
+  const showAllPBCPartners = () => {
+    if (selectedItems.size === 0) return; // No PBC component selected
+    
+    // Clear partner and strategy filters but keep PBC filter
+    clickedPartner = false;
+    clickedStrategy = false;
+    
+    // Get the selected PBC component
+    const selectedPBC = Array.from(selectedItems)[0];
+    
+    // Find all strategies connected to this PBC component
+    const connectedStrategies = [];
+    strategyValues.forEach((strategy, strategyIdx) => {
+      const strategyPBCComponents = strategy.pbcComponents ? strategy.pbcComponents.map(idx => data.pbcComponents[idx]) : [];
+      if (strategyPBCComponents.includes(selectedPBC)) {
+        connectedStrategies.push(strategyIdx);
+      }
+    });
+    
+    // Show all connected strategies
+    const strategiesChildren = strategiesColumn.getElementsByClassName(`${namespace}-data-wrapper`);
+    [...strategiesChildren].forEach((child, idx) => {
+      if (connectedStrategies.includes(idx)) {
+        child.style.display = 'block';
+      } else {
+        child.style.display = 'none';
+      }
+    });
+    
+    // Find all partners connected to these strategies
+    const connectedPartners = new Set();
+    connectedStrategies.forEach(strategyIdx => {
+      const strategy = strategyValues[strategyIdx];
+      if (strategy.partners) {
+        strategy.partners.forEach(partnerIdx => connectedPartners.add(partnerIdx));
+      }
+    });
+    
+    // Show all connected partners
+    const partnersChildren = partnersColumn.getElementsByClassName(`${namespace}-data-wrapper`);
+    [...partnersChildren].forEach((child, idx) => {
+      if (connectedPartners.has(idx)) {
+        child.style.display = 'block';
+      } else {
+        child.style.display = 'none';
+      }
+    });
+    
+    // Show all outcomes connected to these strategies
+    const allConnectedOutcomes = {
+      pbcComponents: new Set(),
+      outputs: new Set(),
+      immediateOutputs: new Set(),
+      intermediateOutputs: new Set(),
+      longTermOutputs: new Set()
+    };
+    
+    connectedStrategies.forEach(strategyIdx => {
+      const strategy = strategyValues[strategyIdx];
+      if (strategy.pbcComponents) strategy.pbcComponents.forEach(idx => allConnectedOutcomes.pbcComponents.add(idx));
+      if (strategy.outputs) strategy.outputs.forEach(idx => allConnectedOutcomes.outputs.add(idx));
+      if (strategy.immediateOutputs) strategy.immediateOutputs.forEach(idx => allConnectedOutcomes.immediateOutputs.add(idx));
+      if (strategy.intermediateOutputs) strategy.intermediateOutputs.forEach(idx => allConnectedOutcomes.intermediateOutputs.add(idx));
+      if (strategy.longTermOutputs) strategy.longTermOutputs.forEach(idx => allConnectedOutcomes.longTermOutputs.add(idx));
+    });
+
+    // Filter outcome columns
+    const filterOutcomeColumn = (columnId, connectedSet) => {
+      const column = document.getElementById(columnId);
+      const columnChildren = column.getElementsByClassName(`${namespace}-data-wrapper`);
+      [...columnChildren].forEach((child, idx) => {
+        if (connectedSet.has(idx)) {
+          child.style.display = 'block';
+        } else {
+          child.style.display = 'none';
+        }
+      });
+    };
+
+    filterOutcomeColumn(pbcComponentsId, allConnectedOutcomes.pbcComponents);
+    filterOutcomeColumn(outputsId, allConnectedOutcomes.outputs);
+    filterOutcomeColumn(immediateOutputsId, allConnectedOutcomes.immediateOutputs);
+    filterOutcomeColumn(intermediateOutputsId, allConnectedOutcomes.intermediateOutputs);
+    filterOutcomeColumn(longTermOutputsId, allConnectedOutcomes.longTermOutputs);
+    
+    // Clear all background highlights
+    [pbcComponentsId, partnersId, strategiesId, outputsId, immediateOutputsId, intermediateOutputsId, longTermOutputsId].forEach(columnId => {
+      const column = document.getElementById(columnId);
+      const columnChildren = column.getElementsByClassName(`${namespace}-data-wrapper`);
+      [...columnChildren].forEach(child => {
+        child.style.background = 'transparent';
+        const textElements = child.getElementsByClassName(textClass);
+        [...textElements].forEach(textEl => {
+          textEl.style.background = 'transparent';
+          textEl.style.backgroundColor = '';
+          textEl.style.boxShadow = '';
+          textEl.style.opacity = '';
+        });
+      });
+    });
+    
+    clearPartnerColumnColors();
+    updateButtonVisibility();
+  };
+
+  // Function to update button visibility based on current state
+  const updateButtonVisibility = () => {
+    // Hide all buttons first
+    seeAllButton.style.display = 'none';
+    seeAllPartnersButton.style.display = 'none';
+    showAllPartnerStrategiesButton.style.display = 'none';
+    showAllPBCStrategiesButton.style.display = 'none';
+    showAllPBCPartnersButton.style.display = 'none';
+    
+    const isPBCSelected = selectedItems.size > 0;
+    
+    if (isPBCSelected) {
+      // Get the selected PBC component name
+      const selectedPBCName = Array.from(selectedItems)[0];
+      
+      // Update button text with the actual PBC component name
+      showAllPBCStrategiesButton.textContent = `Show All Strategies for ${selectedPBCName}`;
+      showAllPBCPartnersButton.textContent = `Show All Partners for ${selectedPBCName}`;
+      
+      // PBC component is selected - use smart button logic
+      
+      // For Strategies column
+      if (clickedStrategy) {
+        // Single strategy is selected - show PBC-specific button
+        showAllPBCStrategiesButton.style.display = 'block';
+      } else if (clickedPartner) {
+        // Partner is selected, strategies are filtered by partner - show PBC-specific button
+        showAllPBCStrategiesButton.style.display = 'block';
+      } else {
+        // All strategies for PBC are shown - show general button
+        seeAllButton.style.display = 'block';
+      }
+      
+      // For Partners column  
+      if (clickedPartner) {
+        // Single partner is selected - show PBC-specific button
+        showAllPBCPartnersButton.style.display = 'block';
+      } else {
+        // All partners for PBC are shown - show general button
+        seeAllPartnersButton.style.display = 'block';
+      }
+      
+    } else {
+      // No PBC component selected - use original logic
+      if (clickedStrategy || clickedPartner) {
+        seeAllButton.style.display = 'block';
+      }
+      
+      if (clickedPartner || clickedStrategy) {
+        seeAllPartnersButton.style.display = 'block';
+      }
+      
+      if (clickedStrategy && clickedPartner) {
+        showAllPartnerStrategiesButton.style.display = 'block';
+      }
+    }
+  };
+
   // Create function to show all strategies for current partner
   const showAllPartnerStrategies = () => {
     if (!clickedPartner) return;
@@ -2025,11 +2165,7 @@ window.onload = async function () {
     filterOutcomeColumn(intermediateOutputsId, allConnectedOutcomes.intermediateOutputs);
     filterOutcomeColumn(longTermOutputsId, allConnectedOutcomes.longTermOutputs);
     
-    // Hide this button since we're now showing all strategies for the partner
-    showAllPartnerStrategiesButton.style.display = 'none';
-    
-    // Also hide the PBC strategies button since partner may span multiple PBC components
-    showAllPBCStrategiesButton.style.display = 'none';
+    updateButtonVisibility();
     
     // Clear all background colors from table items
     [pbcComponentsId, partnersId, strategiesId, outputsId, immediateOutputsId, intermediateOutputsId, longTermOutputsId].forEach(columnId => {
@@ -2091,6 +2227,10 @@ window.onload = async function () {
     // Apply brand gradient based on the primary PBC component
     const newGradient = generatePBCGradient(primaryPBCColor);
     updateBrandGradient(newGradient);
+    
+    // Update selectedItems to reflect the current PBC component selection
+    selectedItems.clear();
+    selectedItems.add(primaryPBCComponent);
     
     // Highlight the corresponding PBC component in the horizontal filter
     const pbcHorizontalBar = document.getElementById(`${namespace}-horizontal-pbcComponents`);
@@ -2193,8 +2333,7 @@ window.onload = async function () {
       }
     });
     
-    // Hide this button since we're now showing all strategies for the PBC component
-    showAllPBCStrategiesButton.style.display = 'none';
+    updateButtonVisibility();
     
     // Clear all background colors from table items
     [pbcComponentsId, partnersId, strategiesId, outputsId, immediateOutputsId, intermediateOutputsId, longTermOutputsId].forEach(columnId => {
@@ -2226,6 +2365,12 @@ window.onload = async function () {
   seeAllPartnersButton.textContent = 'See All Partners';
   partnersColumn.appendChild(seeAllPartnersButton);
   seeAllPartnersButton.onclick = unfilterColumns;
+
+  showAllPBCPartnersButton.className = `${namespace}-see-all`;
+  showAllPBCPartnersButton.style.display = 'none';
+  showAllPBCPartnersButton.textContent = 'Show All Partners for this PBC Component';
+  partnersColumn.appendChild(showAllPBCPartnersButton);
+  showAllPBCPartnersButton.onclick = showAllPBCPartners;
 
   addDataToColumn(data.outputs, outputsId);
   addDataToColumn(data.immediateOutputs, immediateOutputsId);
