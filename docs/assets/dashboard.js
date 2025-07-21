@@ -324,7 +324,7 @@ window.onload = async function () {
    * Removes hover highlights from partner elements and connected strategies
    */
   const clearPartnerHighlights = () => {
-    if (isStrategySelected) {
+    if (isStrategySelected()) {
       return; // Don't clear highlights when a strategy is selected
     }
     
@@ -634,7 +634,7 @@ window.onload = async function () {
         
         // Add hover functionality to highlight connected outcomes
         const highlightStrategyConnections = () => {
-          if (isStrategySelected) return; // Don't highlight when strategy is already selected
+          if (isStrategySelected()) return; // Don't highlight when strategy is already selected
           
           const strategy = strategyList[i];
           // Use theme color if available, otherwise use individual strategy color
@@ -671,7 +671,7 @@ window.onload = async function () {
         };
         
         const clearStrategyHighlights = () => {
-          if (isStrategySelected) return; // Don't clear when strategy is selected
+          if (isStrategySelected()) return; // Don't clear when strategy is selected
           
           // Restore strategy background
           const originalBg = dataDiv.getAttribute('data-original-bg-before-hover') || '';
@@ -720,7 +720,7 @@ window.onload = async function () {
         
         // Add hover functionality for outcome columns to highlight strategies
         const highlightRelatedStrategies = () => {
-          if (isStrategySelected) return; // Don't highlight when strategy is selected
+          if (isStrategySelected()) return; // Don't highlight when strategy is selected
           
           // Find strategies that are connected to this item
           const connectedStrategies = [];
@@ -770,7 +770,7 @@ window.onload = async function () {
         };
         
         const clearItemHighlights = () => {
-          if (isStrategySelected) return; // Don't clear when strategy is selected
+          if (isStrategySelected()) return; // Don't clear when strategy is selected
           
           // Restore original background for the hovered outcome item
           const originalItemBg = textDiv.getAttribute('data-original-bg-before-hover') || '';

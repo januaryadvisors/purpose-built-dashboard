@@ -70,7 +70,7 @@ window.FilterSystem = (function() {
   const getVisibleStrategies = () => {
     return strategyList
       .map((strategy, idx) => ({ strategy, idx }))
-      .filter(({ strategy }) => {
+      .filter(({ strategy, idx }) => {
         // Check PBC filter
         if (filterState.selectedPBC) {
           const strategyPBCs = (strategy.pbcComponents || []).map(i => data.pbcComponents[i]);
@@ -166,6 +166,17 @@ window.FilterSystem = (function() {
       // Reset to original colors
       const originalGradient = window.ColorManager.getOriginalBrandGradient();
       window.ColorManager.updateBrandGradient(originalGradient, namespace, Object.values(columnIds), {});
+      
+      // Clear all PBC component button highlights
+      const pbcBar = document.getElementById(`${namespace}-horizontal-pbcComponents`);
+      if (pbcBar) {
+        const buttons = pbcBar.querySelectorAll('div');
+        buttons.forEach(button => {
+          button.classList.remove('selected');
+          const buttonColor = window.ColorManager.getPBCColor(button.textContent, data);
+          button.style.backgroundColor = `${buttonColor}20`;
+        });
+      }
     }
 
     // Clear visual highlights
