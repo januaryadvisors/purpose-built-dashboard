@@ -379,7 +379,7 @@ window.onload = async function () {
     }
     
     // 2. Check if a specific strategy is currently selected
-    if (isStrategySelected) {
+    if (isStrategySelected()) {
       const strategiesColumn = document.getElementById(COLUMN_IDS.strategies);
       const strategiesChildren = strategiesColumn.getElementsByClassName(`${NAMESPACE}-data-wrapper`);
       
@@ -405,11 +405,21 @@ window.onload = async function () {
       return; // Don't highlight when a strategy is already selected
     }
     
-    // Find all strategies connected to this partner
+    // Find strategies connected to this partner (respecting current PBC filter)
     const connectedStrategies = [];
     strategyList.forEach((strategy, strategyIdx) => {
       if (strategy.partners && strategy.partners.includes(partnerIndex)) {
+        // If a PBC component is selected, only include strategies that also match that PBC
+        if (window.FilterManager.hasSelectedItems()) {
+          const selectedPBC = Array.from(window.FilterManager.getSelectedItems())[0];
+          const strategyPBCs = (strategy.pbcComponents || []).map(idx => data.pbcComponents[idx]);
+          if (strategyPBCs.includes(selectedPBC)) {
         connectedStrategies.push(strategyIdx);
+          }
+        } else {
+          // No PBC filter active, include all strategies for this partner
+          connectedStrategies.push(strategyIdx);
+        }
       }
     });
     
@@ -805,33 +815,33 @@ window.onload = async function () {
   // Set up navigation buttons
   seeAllButton.className = `${NAMESPACE}-see-all`;
   seeAllButton.style.display = 'block';
-  seeAllButton.textContent = 'View All Strategies';
+  seeAllButton.textContent = '× View All Strategies';
   strategiesColumn.appendChild(seeAllButton);
   seeAllButton.onclick = clearAllFilters;
 
   showAllPartnerStrategiesButton.className = `${NAMESPACE}-see-all`;
   showAllPartnerStrategiesButton.style.display = 'none';
-  showAllPartnerStrategiesButton.textContent = 'Show all Strategies for this Partner';
+  showAllPartnerStrategiesButton.textContent = '← Show all Strategies for this Partner';
   showAllPartnerStrategiesButton.style.marginTop = '10px';
   strategiesColumn.appendChild(showAllPartnerStrategiesButton);
   showAllPartnerStrategiesButton.onclick = showAllPartnerStrategies;
 
   showAllPBCStrategiesButton.className = `${NAMESPACE}-see-all`;
   showAllPBCStrategiesButton.style.display = 'none';
-  showAllPBCStrategiesButton.textContent = 'Show all Strategies for this PBC Component';
+  showAllPBCStrategiesButton.textContent = '← Show all Strategies for this PBC Component';
   showAllPBCStrategiesButton.style.marginTop = '10px';
   strategiesColumn.appendChild(showAllPBCStrategiesButton);
   showAllPBCStrategiesButton.onclick = showAllPBCStrategies;
 
   seeAllPartnersButton.className = `${NAMESPACE}-see-all`;
   seeAllPartnersButton.style.display = 'block';
-  seeAllPartnersButton.textContent = 'See All Partners';
+  seeAllPartnersButton.textContent = '× View All Partners';
   partnersColumn.appendChild(seeAllPartnersButton);
   seeAllPartnersButton.onclick = clearAllFilters;
 
   showAllPBCPartnersButton.className = `${NAMESPACE}-see-all`;
   showAllPBCPartnersButton.style.display = 'none';
-  showAllPBCPartnersButton.textContent = 'Show All Partners for this PBC Component';
+  showAllPBCPartnersButton.textContent = '← Show All Partners for this PBC Component';
   partnersColumn.appendChild(showAllPBCPartnersButton);
   showAllPBCPartnersButton.onclick = showAllPBCPartners;
 

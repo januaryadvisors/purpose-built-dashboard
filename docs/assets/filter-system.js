@@ -117,6 +117,8 @@ window.FilterSystem = (function() {
   const applyFilters = () => {
     const visibleStrategies = getVisibleStrategies();
 
+
+
     // Filter Strategies column
     filterColumn(columnIds.strategies, visibleStrategies);
 
@@ -240,9 +242,8 @@ window.FilterSystem = (function() {
    * @param {number} partnerIndex - Index of partner
    */
   const selectPartner = (partnerIndex) => {
-    if (filterState.selectedPartner === partnerIndex && !filterState.selectedStrategy) {
-      // Clicking same partner - clear all filters
-      clearAllFilters();
+    // If clicking the same partner, just return (don't clear filters)
+    if (filterState.selectedPartner === partnerIndex) {
       return;
     }
 

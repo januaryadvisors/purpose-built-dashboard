@@ -285,6 +285,11 @@ window.FilterManager = (function() {
                 
                 // Reset to original brand gradient when PBC component is deselected
                 updateBrandGradient(window.ColorManager.getOriginalBrandGradient());
+                
+                // ✅ SYNC WITH FILTER SYSTEM
+                if (window.FilterSystem && window.FilterSystem.clearAllFilters) {
+                  window.FilterSystem.clearAllFilters();
+                }
               } else {
                 // First, deselect all other PBC Components
                 const allPBCButtons = horizontalBar.querySelectorAll('div');
@@ -310,6 +315,11 @@ window.FilterManager = (function() {
                 // Update brand gradient based on selected PBC component
                 const newGradient = generatePBCGradient(pbcColor);
                 updateBrandGradient(newGradient);
+                
+                // ✅ SYNC WITH FILTER SYSTEM
+                if (window.FilterSystem && window.FilterSystem.selectPBC) {
+                  window.FilterSystem.selectPBC(item);
+                }
               }
               
               // Update button visibility when PBC component is selected
@@ -435,12 +445,12 @@ window.FilterManager = (function() {
             selectedPartnerName = data.partners[idx];
           }
         });
-        showAllPBCStrategiesButton.textContent = `Back to ${selectedPBCName} Strategies`;
+        showAllPBCStrategiesButton.textContent = `← Back to ${selectedPBCName.toUpperCase()} strategies`;
       } else {
-        showAllPBCStrategiesButton.textContent = `View All Strategies for ${selectedPBCName}`;
+        showAllPBCStrategiesButton.textContent = `← Back to ${selectedPBCName.toUpperCase()} strategies`;
       }
       
-      showAllPBCPartnersButton.textContent = `View All Partners for ${selectedPBCName}`;
+      showAllPBCPartnersButton.textContent = `← Back to ${selectedPBCName.toUpperCase()} partners`;
       
       // PBC component is selected - use smart button logic
       

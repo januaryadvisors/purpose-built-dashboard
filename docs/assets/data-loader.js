@@ -192,13 +192,6 @@ window.DataLoader = (function() {
           const hasPBCColumn = Object.keys(model[0]).find(key => 
             key.toLowerCase().includes('pbc') || key.toLowerCase().includes('component')
           );
-          console.log('🔍 PBC Components column found:', hasPBCColumn);
-          if (hasPBCColumn) {
-            console.log('📊 PBC Components sample values:');
-            model.slice(0, 5).forEach((row, i) => {
-              console.log(`  Row ${i + 1} PBC:`, row[hasPBCColumn]);
-            });
-          }
         }
 
         // Helper functions from parseData.js

@@ -1,60 +1,6 @@
 const fs = require('fs');
 const fetch = require('node-fetch');
 
-const showExpectedColumns = () => {
-  console.log('=== EXPECTED COLUMN HEADERS ===\n');
-  
-  console.log('1. LOGIC MODEL CSV (logic_model_expanded.csv):');
-  console.log('   Expected columns:');
-  console.log('   - Inputs');
-  console.log('   - Strategy');
-  console.log('   - Paragraph description');
-  console.log('   - Output');
-  console.log('   - Immediate Outcomes');
-  console.log('   - Intermediate Outcomes');
-  console.log('   - Long-term Outcomes');
-  console.log('   - Partners');
-  console.log('   - Impact Goal');
-  console.log('');
-  
-  console.log('2. RESEARCH CSV (research.csv):');
-  console.log('   Expected columns:');
-  console.log('   - Strategy');
-  console.log('   - Related Outcome');
-  console.log('   - Citation');
-  console.log('   - Citation Link');
-  console.log('');
-  
-  console.log('3. HEADER TOOLTIPS CSV (header_tooltips.csv):');
-  console.log('   Expected format: Two columns with header names and descriptions');
-  console.log('   Example:');
-  console.log('   Inputs,The resources and materials needed to run the program.');
-  console.log('   Partners,The organizations and individuals who collaborate...');
-  console.log('');
-  
-  console.log('4. INPUT TOOLTIPS CSV (input_tooltips.csv):');
-  console.log('   Expected columns:');
-  console.log('   - Inputs Condensed');
-  console.log('   - Description');
-  console.log('');
-  
-  console.log('=== GOOGLE SHEET SETUP INSTRUCTIONS ===');
-  console.log('');
-  console.log('1. Make sure your Google Sheet is set to "Anyone with the link can view"');
-  console.log('   - Go to Share button in top right');
-  console.log('   - Click "Change to anyone with the link"');
-  console.log('   - Set to "Viewer"');
-  console.log('');
-  console.log('2. Organize your data into 4 separate sheets (tabs):');
-  console.log('   - Sheet 1: Logic model data');
-  console.log('   - Sheet 2: Research data');
-  console.log('   - Sheet 3: Header tooltips');
-  console.log('   - Sheet 4: Input tooltips');
-  console.log('');
-  console.log('3. Ensure column headers match exactly (case-sensitive)');
-  console.log('');
-};
-
 const parseFromGoogleSheet = async () => {
   const d3dsv = await import('d3-dsv');
 
@@ -81,15 +27,11 @@ const parseFromGoogleSheet = async () => {
   };
 
   try {
-    // Fetch data from Google Sheets using the correct gid values
-    console.log('Fetching data from Google Sheets...\n');
-    
+    // Fetch data from Google Sheets using the correct gid values    
     const modelRaw = await fetchCSVFromSheet(SHEET_ID, 1482534373); // Sheet 1: Logic model data
     const researchRaw = await fetchCSVFromSheet(SHEET_ID, 1030263523); // Sheet 2: Research data
     const headerTooltipsRaw = await fetchCSVFromSheet(SHEET_ID, 459672780); // Sheet 3: Header tooltips
     const inputTooltipsRaw = await fetchCSVFromSheet(SHEET_ID, 304412178); // Sheet 4: Input tooltips
-
-    console.log('✓ Successfully fetched all sheets\n');
 
     const arrayify = multilineRow => {
       // Add null/undefined check
@@ -110,13 +52,6 @@ const parseFromGoogleSheet = async () => {
     const research = d3dsv.csvParse(researchRaw);
     const headerTooltips = d3dsv.csvParseRows(headerTooltipsRaw);
     const inputTooltips = d3dsv.csvParse(inputTooltipsRaw);
-
-    // Debug: Log the parsed data structure
-    console.log('Data summary:');
-    console.log(`- Logic model: ${model.length} rows`);
-    console.log(`- Research: ${research.length} rows`);
-    console.log(`- Header tooltips: ${headerTooltips.length} rows`);
-    console.log(`- Input tooltips: ${inputTooltips.length} rows\n`);
 
     const inputs = getUnique(model, 'Inputs');
     const partners = getUnique(model, 'Partners');
@@ -204,6 +139,4 @@ const parseFromGoogleSheet = async () => {
 };
 
 // Show expected columns first, then run the parser
-showExpectedColumns();
-console.log('=== STARTING PARSING ===\n');
 parseFromGoogleSheet(); 
