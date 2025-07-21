@@ -17,25 +17,21 @@ window.ColorManager = (function() {
   // Current brand gradient - will be modified based on selected PBC component
   let brandGradient = [...originalBrandGradient];
 
+  /*==============================*/
   // Function to get PBC Component color dynamically
+  /*==============================*/
   const getPBCColor = (pbcComponent, data) => {
     if (!data || !data.pbcComponents) {
       return pbcColorPalette[0]; // Default to first color
     }
-    
     // Find the index of this PBC component in the data array
     const componentIndex = data.pbcComponents.indexOf(pbcComponent);
-    
-    if (componentIndex !== -1 && componentIndex < pbcColorPalette.length) {
-      return pbcColorPalette[componentIndex];
-    }
-    
-    // If component not found or index exceeds palette, use modulo to cycle through colors
-    const fallbackIndex = componentIndex !== -1 ? componentIndex % pbcColorPalette.length : 0;
-    return pbcColorPalette[fallbackIndex];
+    return pbcColorPalette[componentIndex];
   };
 
+  /*==============================*/
   // Function to generate gradient colors based on a base PBC component color
+  /*==============================*/
   const generatePBCGradient = (baseColor) => {
     // Remove # if present
     const cleanColor = baseColor.replace('#', '');
@@ -72,7 +68,9 @@ window.ColorManager = (function() {
     ];
   };
 
+  /*==============================*/
   // Function to update all UI elements with the new brand gradient
+  /*==============================*/
   const updateBrandGradient = (newGradient, namespace, columnIds, columns) => {
     brandGradient = [...newGradient];
     
@@ -124,21 +122,7 @@ window.ColorManager = (function() {
         });
       }
     });
-    
-    // Update horizontal bar styling if it exists
-    const pbcHorizontalBar = document.getElementById(`${namespace}-horizontal-pbcComponents`);
-    if (pbcHorizontalBar) {
-      pbcHorizontalBar.style.backgroundColor = brandGradient[0] + '1A';
-      pbcHorizontalBar.style.border = `2px solid ${brandGradient[0]}80`;
-      
-      const titleDiv = pbcHorizontalBar.querySelector('div');
-      if (titleDiv && titleDiv.style.fontWeight === 'bold') {
-        titleDiv.style.color = brandGradient[0];
-      }
-    }
-    
-    console.log('🎨 Updated brand gradient:', brandGradient);
-  };
+      };
 
   // Function to get the current brand gradient
   const getCurrentBrandGradient = () => {

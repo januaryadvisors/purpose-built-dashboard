@@ -8,7 +8,6 @@ window.FilterManager = (function() {
   const filterPartnersFromPBC = (namespace, partnersId, data) => {
     const pbcHorizontalBar = document.getElementById(`${namespace}-horizontal-pbcComponents`);
     if (!pbcHorizontalBar) {
-      console.log('❌ Missing PBC Components horizontal bar');
       return;
     }
     
@@ -19,7 +18,6 @@ window.FilterManager = (function() {
     const selectedPBCs = new Set([...pbcHorizontalBar.querySelectorAll('div.selected')]
       .map(btn => btn.textContent));
     
-    console.log(`📋 Selected PBC Components: [${[...selectedPBCs].join(', ')}]`);
     
     const partnersChildren = partnersColumn.getElementsByClassName(`${namespace}-data-wrapper`);
     
@@ -37,7 +35,6 @@ window.FilterManager = (function() {
           });
         }
       });
-      console.log('🧹 No PBC selected, showing all partners');
       return;
     }
     
@@ -56,7 +53,6 @@ window.FilterManager = (function() {
       }
     });
     
-    console.log(`🤝 Visible partners: [${[...visiblePartners].join(', ')}]`);
     
     // Show/hide partners in one loop
     [...partnersChildren].forEach((child, idx) => {
@@ -81,7 +77,6 @@ window.FilterManager = (function() {
           });
         }
       });
-      console.log('🧹 Cleared Partner column colors and data attributes');
     }
   };
 
@@ -141,17 +136,12 @@ window.FilterManager = (function() {
       
       // Get visible strategies
       const visibleStrategies = [];
-      console.log(`🔍 Filtering strategies based on selected ${dataKey}:`, Array.from(selectedItems));
       
       [...strategiesChildren].forEach((child, idx) => {
         const strategy = strategyValues[idx];
         const strategyItems = strategy[dataKey] ? strategy[dataKey].map(itemIdx => data[dataKey][itemIdx]) : [];
         const hasSelectedItem = strategyItems.some(item => selectedItems.has(item));
         
-        // Debug logging for PBC components
-        if (dataKey === 'pbcComponents') {
-          console.log(`📊 Strategy "${strategy.label}": PBC Components = [${strategyItems.join(', ')}], hasSelectedItem = ${hasSelectedItem}`);
-        }
         
         if (hasSelectedItem) {
           visibleStrategies.push(strategy);
@@ -160,9 +150,7 @@ window.FilterManager = (function() {
           child.style.display = 'none';
         }
       });
-      
-      console.log(`✅ Visible strategies after filtering: ${visibleStrategies.length} out of ${strategiesChildren.length}`);
-      
+            
       // Filter other columns based on visible strategies
       const filterColumnByStrategies = (columnId, dataKey) => {
         const column = document.getElementById(columnId);
@@ -196,7 +184,6 @@ window.FilterManager = (function() {
         const partnersColumn = document.getElementById(partnersId);
         if (partnersColumn) {
           const partnersChildren = partnersColumn.getElementsByClassName(`${namespace}-data-wrapper`);
-          console.log(`🤝 Filtering Partners column based on PBC Components`);
           
           [...partnersChildren].forEach((child, idx) => {
             const partner = data.partners[idx];
@@ -212,7 +199,6 @@ window.FilterManager = (function() {
               child.style.display = 'none';
             }
             
-            console.log(`🤝 Partner "${partner}" connected to PBC strategies: ${isConnectedToPBCComponent}`);
           });
         }
       } else {
@@ -334,12 +320,10 @@ window.FilterManager = (function() {
                 // Deselect item
                 selectedItems.delete(item);
                 itemDiv.classList.remove('selected');
-                console.log(`🔴 Deselected ${dataKey}: ${item}`);
               } else {
                 // Select item
                 selectedItems.add(item);
                 itemDiv.classList.add('selected');
-                console.log(`🟢 Selected ${dataKey}: ${item}`);
               }
             }
             
@@ -451,12 +435,12 @@ window.FilterManager = (function() {
             selectedPartnerName = data.partners[idx];
           }
         });
-        showAllPBCStrategiesButton.textContent = `Back to ${selectedPBCName} Strategies for ${selectedPartnerName}`;
+        showAllPBCStrategiesButton.textContent = `Back to ${selectedPBCName} Strategies`;
       } else {
-        showAllPBCStrategiesButton.textContent = `Show All Strategies for ${selectedPBCName}`;
+        showAllPBCStrategiesButton.textContent = `View All Strategies for ${selectedPBCName}`;
       }
       
-      showAllPBCPartnersButton.textContent = `Show All Partners for ${selectedPBCName}`;
+      showAllPBCPartnersButton.textContent = `View All Partners for ${selectedPBCName}`;
       
       // PBC component is selected - use smart button logic
       

@@ -30,14 +30,9 @@ window.onload = async function () {
   // UTILITY FUNCTIONS
   // ========================================
   
-  /**
-   * Creates a DOM element with namespace-aware ID and class
-   * @param {Element} parent - Parent element to append to
-   * @param {string} type - HTML tag type
-   * @param {string} id - Element ID (will be prefixed with namespace)
-   * @param {string} className - CSS class name (will be prefixed with namespace)
-   * @returns {Element} Created element
-   */
+  /*==============================*/
+  // Creates a DOM element with namespace-aware ID and class
+  /*==============================*/
   const createElement = (parent, type, id, className) => {
     const el = document.createElement(type);
     if (id) {
@@ -50,14 +45,24 @@ window.onload = async function () {
     return el;
   };
 
-  /**
-   * Adds a tooltip to an element using the TooltipManager
-   * @param {Element} parent - Parent element for the tooltip icon
-   * @param {string} tooltipText - Text to display in tooltip
-   * @param {Element} root - Root element for tooltip positioning
-   */
+  /*==============================*/
+   // Adds a tooltip to an element using the TooltipManager
+  /*==============================*/
   const addTooltip = (parent, tooltipText, root) => {
     return window.TooltipManager.addTooltip(parent, tooltipText, root, NAMESPACE);
+  };
+
+  /**
+   * Filters a column to only show items connected to a given set of indices
+   * @param {string} columnId - ID of the column to filter
+   * @param {Set} connectedSet - Set of indices to show
+   */
+  const filterOutcomeColumn = (columnId, connectedSet) => {
+    const column = document.getElementById(columnId);
+    const columnChildren = column.getElementsByClassName(`${NAMESPACE}-data-wrapper`);
+    [...columnChildren].forEach((child, idx) => {
+      child.style.display = connectedSet.has(idx) ? 'block' : 'none';
+    });
   };
 
   
@@ -65,17 +70,15 @@ window.onload = async function () {
   // STATE MANAGEMENT
   // ========================================
   
-  /** Whether a strategy has been clicked/selected */
-  let isStrategySelected = false;
-  
-  /** Whether a partner has been clicked/selected */
-  let isPartnerSelected = false;
-  
   /** Global data object loaded from external source */
   let data = null;
   
   /** Array of strategy objects for easy access */
   let strategyList = [];
+  
+  /** FilterSystem state helpers */
+  const isStrategySelected = () => window.FilterSystem.isStrategySelected();
+  const isPartnerSelected = () => window.FilterSystem.isPartnerSelected();
 
   
   // ========================================
@@ -115,11 +118,6 @@ window.onload = async function () {
 
   /**
    * Toggles column visibility and creates horizontal filter bars
-   * @param {string} columnId - ID of column to toggle
-   * @param {string} columnLabel - Display label for the column
-   * @param {string} dataKey - Key in data object for this column type
-   * @param {number} colorIndex - Index in color gradient for this column
-   * @param {boolean} hideColumn - Whether to hide the column
    */
   const toggleColumnVisibility = (columnId, columnLabel, dataKey, colorIndex, hideColumn) => {
     const config = {
@@ -185,10 +183,9 @@ window.onload = async function () {
     },
   };
 
-  /**
-   * Creates a modal dialog for displaying strategy details
-   * @returns {Object} Object containing modal elements
-   */
+  /*==============================*/
+   //Creates a modal dialog for displaying strategy details
+  /*==============================*/
   const createStrategyModal = () => {
     const modal = createElement(document.body, 'div', 'modal');
     modal.onclick = () => {
@@ -226,360 +223,24 @@ window.onload = async function () {
   // DATA LOADING & PROCESSING
   // ========================================
   
-  /** Load data from external source (Google Sheets or local file) */
+  /** Load data using external DataLoader module */
   try {
-    // Use external configuration
-    const CONFIG = window.DASHBOARD_CONFIG || {
-      USE_LIVE_GOOGLE_SHEETS: false,
-      CACHE_DURATION: 0
-    };
-
-    // Clear all cache for debugging
-    console.log('🗑️ Clearing all cached data for debugging');
-    localStorage.clear();
+    data = await window.DataLoader.loadData(dashboardWrapper, createElement, NAMESPACE);
     
-    const now = Date.now();
+    // Set strategy list for easy access
+    strategyList = Object.values(data.strategies);
     
-    if (CONFIG.USE_LIVE_GOOGLE_SHEETS) {
-      // Add loading indicator
-      const loadingDiv = createElement(dashboardWrapper, 'div', 'loading');
-      loadingDiv.style.textAlign = 'center';
-      loadingDiv.style.padding = '40px';
-      loadingDiv.style.fontSize = '18px';
-      loadingDiv.innerText = 'Loading fresh data from Google Sheets...';
-
-      // Function to fetch and parse CSV
-      const fetchCSV = async (gid) => {
-        const url = `https://docs.google.com/spreadsheets/d/${CONFIG.GOOGLE_SHEET_ID}/export?format=csv&gid=${gid}`;
-        console.log(`🌐 Fetching sheet gid ${gid}: ${url}`);
-        
-        try {
-          const response = await fetch(url);
-          console.log(`📡 Response status for gid ${gid}:`, response.status, response.statusText);
-          console.log(`📡 Response headers for gid ${gid}:`, [...response.headers.entries()]);
-          console.log(`📡 Response URL for gid ${gid}:`, response.url);
-          
-          if (!response.ok) {
-            console.error(`❌ Bad response for gid ${gid}:`, response.status, response.statusText);
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-          }
-          
-          const text = await response.text();
-          console.log(`✅ Successfully fetched gid ${gid}, data length:`, text.length);
-          console.log(`📄 First 200 chars of gid ${gid}:`, text.substring(0, 200));
-          
-          // Check if we got redirected to a login page
-          if (text.includes('accounts.google.com') || text.includes('ServiceLogin')) {
-            console.error(`❌ gid ${gid} returned login page - sheet may not be public`);
-            throw new Error('Redirected to login page - sheet not public');
-          }
-          
-          // Check if we got HTML instead of CSV
-          if (text.trim().startsWith('<')) {
-            console.error(`❌ gid ${gid} returned HTML instead of CSV`);
-            console.log(`🔍 HTML content:`, text.substring(0, 500));
-            throw new Error('Received HTML instead of CSV - check sheet permissions');
-          }
-          
-          return text;
-        } catch (fetchError) {
-          console.error(`❌ Fetch error for gid ${gid}:`, fetchError);
-          throw fetchError;
-        }
-      };
-
-      // Fetch all sheets in parallel
-      const [modelRaw, researchRaw, headerTooltipsRaw, inputTooltipsRaw] = await Promise.all([
-        fetchCSV(CONFIG.SHEET_GIDS.logic_model_expanded),
-        fetchCSV(CONFIG.SHEET_GIDS.research),
-        fetchCSV(CONFIG.SHEET_GIDS.header_tooltips),
-        fetchCSV(CONFIG.SHEET_GIDS.input_tooltips)
-      ]);
-
-      console.log('🔍 RAW DATA FROM LOGIC MODEL EXPANDED SHEET:');
-      console.log('📄 First 1000 characters:', modelRaw.substring(0, 1000));
-      console.log('📊 Total length:', modelRaw.length);
-      console.log('📋 First 5 lines:');
-      modelRaw.split('\n').slice(0, 5).forEach((line, i) => {
-        console.log(`Line ${i + 1}:`, line);
-      });
-
-      // Improved CSV parser to handle multiline fields
-      const parseCSV = (csvText) => {
-        const rows = [];
-        let currentRow = [];
-        let currentField = '';
-        let inQuotes = false;
-        let i = 0;
-        
-        while (i < csvText.length) {
-          const char = csvText[i];
-          
-          if (char === '"') {
-            if (inQuotes && csvText[i + 1] === '"') {
-              // Handle escaped quotes ""
-              currentField += '"';
-              i++; // Skip next quote
-            } else {
-              // Toggle quote state
-              inQuotes = !inQuotes;
-            }
-          } else if (char === ',' && !inQuotes) {
-            // End of field
-            currentRow.push(currentField.trim());
-            currentField = '';
-          } else if (char === '\n' && !inQuotes) {
-            // End of row
-            currentRow.push(currentField.trim());
-            if (currentRow.some(field => field.length > 0)) {
-              rows.push(currentRow);
-            }
-            currentRow = [];
-            currentField = '';
-          } else {
-            // Regular character (including newlines inside quotes)
-            currentField += char;
-          }
-          i++;
-        }
-        
-        // Handle last field/row
-        if (currentField || currentRow.length > 0) {
-          currentRow.push(currentField.trim());
-          if (currentRow.some(field => field.length > 0)) {
-            rows.push(currentRow);
-          }
-        }
-        
-        if (rows.length === 0) return [];
-        
-        const headers = rows[0].map(h => h.replace(/"/g, '').trim());
-        
-        return rows.slice(1).map(row => {
-          const obj = {};
-          headers.forEach((header, index) => {
-            obj[header] = (row[index] || '').replace(/"/g, '').trim();
-          });
-          return obj;
-        });
-      };
-
-      const parseCSVRows = (csvText) => {
-        return csvText.split('\n')
-          .filter(line => line.trim())
-          .map(line => {
-            const values = [];
-            let current = '';
-            let inQuotes = false;
-            
-            for (let i = 0; i < line.length; i++) {
-              const char = line[i];
-              if (char === '"') {
-                inQuotes = !inQuotes;
-              } else if (char === ',' && !inQuotes) {
-                values.push(current.trim().replace(/"/g, ''));
-                current = '';
-              } else {
-                current += char;
-              }
-            }
-            values.push(current.trim().replace(/"/g, ''));
-            return values;
-          });
-      };
-
-      // Parse the CSV data
-      const model = parseCSV(modelRaw);
-      const research = parseCSV(researchRaw);
-      const headerTooltips = parseCSVRows(headerTooltipsRaw);
-      const inputTooltips = parseCSV(inputTooltipsRaw);
-
-      console.log('🗃️ PARSED LOGIC MODEL DATA:');
-      console.log('📝 Number of rows:', model.length);
-      console.log('🏷️ Column headers:', Object.keys(model[0] || {}));
-      console.log('📋 First 3 rows of parsed data:');
-      model.slice(0, 3).forEach((row, i) => {
-        console.log(`Row ${i + 1}:`, row);
-      });
-      
-      // Check specifically for PBC Components column
-      if (model.length > 0) {
-        const hasePBCColumn = Object.keys(model[0]).find(key => 
-          key.toLowerCase().includes('pbc') || key.toLowerCase().includes('component')
-        );
-        console.log('🔍 PBC Components column found:', hasePBCColumn);
-        if (hasePBCColumn) {
-          console.log('📊 PBC Components sample values:');
-          model.slice(0, 5).forEach((row, i) => {
-            console.log(`  Row ${i + 1} PBC:`, row[hasePBCColumn]);
-          });
-        }
-      }
-
-      // Helper functions from parseData.js
-      const arrayify = multilineRow => {
-        return multilineRow
-          .split('\n')
-          .map(item => item.trim())
-          .filter(item => item);
-      };
-
-      const getUnique = (data, key) => {
-        return [...new Set(data.map(row => arrayify(row[key])).flat())];
-      };
-
-      // Extract unique values
-      const inputs = getUnique(model, 'Inputs');
-      const pbcComponents = getUnique(model, 'PBC Component');
-      const partners = getUnique(model, 'Partners');
-      const outputs = getUnique(model, 'Output');
-      const immediateOutputs = getUnique(model, 'Immediate Outcomes');
-      const intermediateOutputs = getUnique(model, 'Intermediate Outcomes');
-      const longTermOutputs = getUnique(model, 'Long-term Outcomes');
-
-      // Build strategies object
-      const strategies = Object.fromEntries(
-        model.map(row => [
-          row.Strategy.trim(),
-          {
-            label: row.Strategy,
-            details: row['Paragraph description'],
-            outputs: arrayify(row.Output).map(output => outputs.indexOf(output)),
-            immediateOutputs: arrayify(row['Immediate Outcomes']).map(output =>
-              immediateOutputs.indexOf(output),
-            ),
-            intermediateOutputs: arrayify(row['Intermediate Outcomes']).map(output =>
-              intermediateOutputs.indexOf(output),
-            ),
-            longTermOutputs: arrayify(row['Long-term Outcomes']).map(output =>
-              longTermOutputs.indexOf(output),
-            ),
-            partners: arrayify(row.Partners).map(partner => partners.indexOf(partner)),
-            pbcComponents: arrayify(row['PBC Component'] || '').map(component => pbcComponents.indexOf(component)),
-            research: [],
-          },
-        ]),
-      );
-
-      // Process research data with safety checks
-      research.forEach((r, index) => {        
-        // Safety checks for required fields
-        if (!r.Strategy) {
-          console.log(`⚠️ Skipping research item ${index} - missing Strategy`);
-          return;
-        }
-        
-        if (!r.Citation) {
-          console.log(`⚠️ Skipping research item ${index} - missing Citation`);
-          return;
-        }
-        
-        const researchStrategy = r.Strategy.trim();
-        if (!strategies[researchStrategy]) {
-          console.log(`❌ No strategy found for ${researchStrategy}`);
-          return;
-        }
-        
-        const citationSanitized = r.Citation.split('http');
-        if (citationSanitized.length !== 2) {
-          console.log('⚠️ Error processing citation', r.Citation);
-          return; // Skip this item instead of continuing with bad data
-        }
-        
-        const relatedOutcome = (r['Related Outcome'] || '').trim();
-        const researchDatum = {
-          citation: citationSanitized[0],
-          citationLinkText: 'http' + citationSanitized[1],
-          citationLink: r['Citation Link'] || '',
-          relatedOutcomes: [relatedOutcome],
-        };
-        
-        const match = strategies[researchStrategy].research.find(
-          rs => rs.citation === researchDatum.citation,
-        );
-        if (!match) {
-          strategies[researchStrategy].research.push(researchDatum);
-        } else {
-          if (!match.relatedOutcomes.includes(relatedOutcome)) {
-            match.relatedOutcomes.push(relatedOutcome);
-          }
-        }
-      });
-
-      // Sort research citations alphabetically
-      Object.entries(strategies).forEach(([_, strategy], i) => {
-        strategy.research.sort((a, b) => {
-          return a.citation.replace('"', '').localeCompare(b.citation.replace('"', ''));
-        });
-      });
-      // Build final data object
-      data = {
-        headerTooltips: headerTooltips.map(t => t[1]),
-        inputs,
-        inputTooltips: inputs.map(input => {
-          const tooltip = inputTooltips.find(t => t['Inputs Condensed'] === input);
-          return tooltip ? (tooltip['Description'] || input) : input;
-        }),
-        pbcComponents,
-        strategies,
-        partners,
-        outputs,
-        immediateOutputs,
-        intermediateOutputs,
-        longTermOutputs,
-      };
-
-      console.log('🎯 FINAL DATA OBJECT:');
-      console.log('📊 PBC Components in data:', data.pbcComponents);
-      console.log('🏗️ Sample strategy with PBC mapping:', Object.values(data.strategies)[0]);
-
-      console.log('Data loaded from Google Sheets:', data);
-      
-      // Cache the data
-      localStorage.setItem('dashboard-data', JSON.stringify(data));
-      localStorage.setItem('dashboard-data-timestamp', now.toString());
-      
-      // Remove loading indicator
-      loadingDiv.remove();
-    } else {
-      // Fall back to local data.json when live sheets are disabled
-      const dataRaw = await fetch('./assets/data.json');
-      data = await dataRaw.json();
-      console.log('Using local data.json:', data);
-    }
-     
+    // Initialize FilterSystem with loaded data
+    window.FilterSystem.init({
+      namespace: NAMESPACE,
+      columnIds: COLUMN_IDS,
+      data: data,
+      strategyList: strategyList
+    });
   } catch (error) {
-    console.error('Error loading data from Google Sheets:', error);
-    
-    // Try to fall back to local data.json
-    try {
-      const dataRaw = await fetch('./assets/data.json');
-      data = await dataRaw.json();
-      console.log('Fallback to local data.json:', data);
-      
-      // Update loading indicator to show fallback
-      const loadingDiv = document.getElementById(`${NAMESPACE}-loading`);
-      if (loadingDiv) {
-        loadingDiv.innerText = 'Using cached data (Google Sheets unavailable)';
-        loadingDiv.style.color = '#f65c2c';
-        setTimeout(() => loadingDiv.remove(), 3000);
-      }
-    } catch (fallbackError) {
-      console.error('Failed to load fallback data:', fallbackError);
-      
-      // Show error message
-      const errorDiv = createElement(dashboardWrapper, 'div', 'error');
-      errorDiv.style.textAlign = 'center';
-      errorDiv.style.padding = '40px';
-      errorDiv.style.fontSize = '18px';
-      errorDiv.style.color = '#d32f2f';
-      errorDiv.innerText = 'Failed to load data. Please try again later.';
-      return;
-    }
+    console.error('Failed to load data:', error);
+    return; // Stop execution if data loading fails
   }
-
-  // Set strategy list for easy access
-  strategyList = Object.values(data.strategies);
 
   
   // ========================================
@@ -740,7 +401,7 @@ window.onload = async function () {
    * @returns {Function} Event handler function
    */
   const createPartnerHighlight = (partnerIndex) => () => {
-    if (isStrategySelected) {
+    if (isStrategySelected()) {
       return; // Don't highlight when a strategy is already selected
     }
     
@@ -796,26 +457,8 @@ window.onload = async function () {
    * Clears all filters and shows all columns
    */
   const clearAllFilters = () => {
-    isStrategySelected = false;
-    isPartnerSelected = false;
-    
-    const config = {
-      namespace: NAMESPACE, 
-      pbcComponentsId: COLUMN_IDS.pbcComponents, 
-      partnersId: COLUMN_IDS.partners, 
-      strategiesId: COLUMN_IDS.strategies, 
-      outputsId: COLUMN_IDS.outputs, 
-      immediateOutputsId: COLUMN_IDS.immediateOutputs, 
-      intermediateOutputsId: COLUMN_IDS.intermediateOutputs, 
-      longTermOutputsId: COLUMN_IDS.longTermOutputs,
-      textClass: TEXT_CLASS, 
-      getPBCColor: getPBCComponentColor, 
-      updateBrandGradient: updateDashboardColors, 
-      updateButtonVisibility: updateNavigationButtons, 
-      data
-    };
-    
-    return window.FilterManager.unfilterColumns(config);
+    window.FilterSystem.clearAllFilters();
+    updateNavigationButtons();
   };
 
   /**
@@ -824,84 +467,7 @@ window.onload = async function () {
    * @returns {Function} Event handler function
    */
   const selectStrategy = (strategyIndex) => () => {
-    if (isStrategySelected && !isPartnerSelected) {
-      clearAllFilters();
-      return;
-    }
-    
-    // Set strategy as selected to disable hover states
-    isStrategySelected = true;
-
-    const strategiesColumn = document.getElementById(COLUMN_IDS.strategies);
-    const strategiesChildren = strategiesColumn.getElementsByClassName(`${NAMESPACE}-data-wrapper`);
-    [...strategiesChildren].forEach((child, idx) => {
-      child.style.display = idx === strategyIndex ? 'block' : 'none';
-    });
-
-    // Filter connected columns to show only related items
-    const filterConnectedColumn = (strategy, columnKey, columnId) => {
-      const highlightIndices = strategy[columnKey];
-      const column = document.getElementById(columnId);
-      const columnChildren = column.getElementsByClassName(`${NAMESPACE}-data-wrapper`);
-      [...columnChildren].forEach((child, i) => {
-        child.style.display = highlightIndices.includes(i) ? 'block' : 'none';
-      });
-    };
-
-    const selectedStrategy = strategyList[strategyIndex];
-    
-    filterConnectedColumn(selectedStrategy, 'pbcComponents', COLUMN_IDS.pbcComponents);
-    
-    // Handle Partners column: preserve partner filter if active, otherwise filter by strategy
-    if (!isPartnerSelected) {
-      filterConnectedColumn(selectedStrategy, 'partners', COLUMN_IDS.partners);
-    }
-    
-    filterConnectedColumn(selectedStrategy, 'outputs', COLUMN_IDS.outputs);
-    filterConnectedColumn(selectedStrategy, 'immediateOutputs', COLUMN_IDS.immediateOutputs);
-    filterConnectedColumn(selectedStrategy, 'intermediateOutputs', COLUMN_IDS.intermediateOutputs);
-    filterConnectedColumn(selectedStrategy, 'longTermOutputs', COLUMN_IDS.longTermOutputs);
-
-    // Apply color theme based on the selected strategy's PBC component
-    if (selectedStrategy.pbcComponents && selectedStrategy.pbcComponents.length > 0) {
-      const primaryPBCIndex = selectedStrategy.pbcComponents[0];
-      const primaryPBCComponent = data.pbcComponents[primaryPBCIndex];
-      const primaryPBCColor = getPBCComponentColor(primaryPBCComponent);
-      
-      console.log(`🎨 Strategy "${selectedStrategy.label}" - Applying brand gradient for PBC component: "${primaryPBCComponent}"`);
-      
-      // Apply brand gradient based on the primary PBC component
-      const newGradient = createPBCGradient(primaryPBCColor);
-      updateDashboardColors(newGradient);
-      
-      // Update FilterManager's selected items
-      window.FilterManager.clearSelectedItems();
-      window.FilterManager.addSelectedItem(primaryPBCComponent);
-      
-      // Highlight the corresponding PBC component in the horizontal filter
-      const pbcHorizontalBar = document.getElementById(`${NAMESPACE}-horizontal-pbcComponents`);
-      if (pbcHorizontalBar) {
-        // Clear existing selections
-        const allPBCButtons = pbcHorizontalBar.querySelectorAll('div');
-        allPBCButtons.forEach(button => {
-          if (button.textContent && button.classList.contains('selected')) {
-            button.classList.remove('selected');
-            const buttonPBCColor = getPBCComponentColor(button.textContent);
-            button.style.backgroundColor = `${buttonPBCColor}20`;
-          }
-        });
-        
-        // Highlight the primary PBC component
-        allPBCButtons.forEach(button => {
-          if (button.textContent === primaryPBCComponent) {
-            button.classList.add('selected');
-            button.style.backgroundColor = `${primaryPBCColor}80`;
-            console.log(`🟢 Highlighted PBC component button: "${primaryPBCComponent}"`);
-          }
-        });
-      }
-    }
-
+    window.FilterSystem.selectStrategy(strategyIndex);
     updateNavigationButtons();
   };
 
@@ -911,84 +477,7 @@ window.onload = async function () {
    * @returns {Function} Event handler function
    */
   const selectPartner = (partnerIndex) => () => {
-    if (isPartnerSelected && !isStrategySelected) {
-      clearAllFilters();
-      return;
-    }
-    
-    // Set partner as selected to disable hover states
-    isPartnerSelected = true;
-
-    // Show only the clicked partner
-    const partnersColumn = document.getElementById(COLUMN_IDS.partners);
-    const partnersChildren = partnersColumn.getElementsByClassName(`${NAMESPACE}-data-wrapper`);
-    [...partnersChildren].forEach((child, idx) => {
-      child.style.display = idx === partnerIndex ? 'block' : 'none';
-    });
-
-    // Find all strategies connected to this partner
-    const connectedStrategies = [];
-    strategyList.forEach((strategy, strategyIdx) => {
-      if (strategy.partners && strategy.partners.includes(partnerIndex)) {
-        // If a PBC component is selected, only include strategies that also match that PBC component
-        if (window.FilterManager.hasSelectedItems()) {
-          const selectedPBC = Array.from(window.FilterManager.getSelectedItems())[0];
-          const strategyPBCComponents = strategy.pbcComponents ? strategy.pbcComponents.map(idx => data.pbcComponents[idx]) : [];
-          if (strategyPBCComponents.includes(selectedPBC)) {
-            connectedStrategies.push(strategyIdx);
-          }
-        } else {
-          // No PBC filter active, include all strategies for this partner
-          connectedStrategies.push(strategyIdx);
-        }
-      }
-    });
-
-    // Handle Strategies column: preserve strategy filter if active, otherwise show connected strategies
-    if (!isStrategySelected) {
-      const strategiesColumn = document.getElementById(COLUMN_IDS.strategies);
-      const strategiesChildren = strategiesColumn.getElementsByClassName(`${NAMESPACE}-data-wrapper`);
-      [...strategiesChildren].forEach((child, idx) => {
-        child.style.display = connectedStrategies.includes(idx) ? 'block' : 'none';
-      });
-    }
-
-    // Handle outcome columns: only filter if no strategy is already selected
-    if (!isStrategySelected) {
-      // Collect all outcomes from connected strategies
-      const allConnectedOutcomes = {
-        pbcComponents: new Set(),
-        outputs: new Set(),
-        immediateOutputs: new Set(),
-        intermediateOutputs: new Set(),
-        longTermOutputs: new Set()
-      };
-      
-      connectedStrategies.forEach(strategyIdx => {
-        const strategy = strategyList[strategyIdx];
-        if (strategy.pbcComponents) strategy.pbcComponents.forEach(idx => allConnectedOutcomes.pbcComponents.add(idx));
-        if (strategy.outputs) strategy.outputs.forEach(idx => allConnectedOutcomes.outputs.add(idx));
-        if (strategy.immediateOutputs) strategy.immediateOutputs.forEach(idx => allConnectedOutcomes.immediateOutputs.add(idx));
-        if (strategy.intermediateOutputs) strategy.intermediateOutputs.forEach(idx => allConnectedOutcomes.intermediateOutputs.add(idx));
-        if (strategy.longTermOutputs) strategy.longTermOutputs.forEach(idx => allConnectedOutcomes.longTermOutputs.add(idx));
-      });
-
-      // Filter outcome columns to only show connected outcomes
-      const filterOutcomeColumn = (columnId, connectedSet) => {
-        const column = document.getElementById(columnId);
-        const columnChildren = column.getElementsByClassName(`${NAMESPACE}-data-wrapper`);
-        [...columnChildren].forEach((child, idx) => {
-          child.style.display = connectedSet.has(idx) ? 'block' : 'none';
-        });
-      };
-
-      filterOutcomeColumn(COLUMN_IDS.pbcComponents, allConnectedOutcomes.pbcComponents);
-      filterOutcomeColumn(COLUMN_IDS.outputs, allConnectedOutcomes.outputs);
-      filterOutcomeColumn(COLUMN_IDS.immediateOutputs, allConnectedOutcomes.immediateOutputs);
-      filterOutcomeColumn(COLUMN_IDS.intermediateOutputs, allConnectedOutcomes.intermediateOutputs);
-      filterOutcomeColumn(COLUMN_IDS.longTermOutputs, allConnectedOutcomes.longTermOutputs);
-    }
-
+    window.FilterSystem.selectPartner(partnerIndex);
     updateNavigationButtons();
   };
 
@@ -1013,8 +502,8 @@ window.onload = async function () {
     const config = {
       seeAllButton, seeAllPartnersButton, showAllPartnerStrategiesButton, 
       showAllPBCStrategiesButton, showAllPBCPartnersButton,
-      clickedStrategy: isStrategySelected, 
-      clickedPartner: isPartnerSelected, 
+      clickedStrategy: isStrategySelected(), 
+      clickedPartner: isPartnerSelected(), 
       namespace: NAMESPACE, 
       partnersId: COLUMN_IDS.partners, 
       data
@@ -1026,206 +515,15 @@ window.onload = async function () {
    * Shows all strategies for the currently selected partner
    */
   const showAllPartnerStrategies = () => {
-    if (!isPartnerSelected) return;
-    
-    // Clear PBC component selection when showing all partner strategies
-    window.FilterManager.clearSelectedItems();
-    
-    // Reset to original color scheme
-    updateDashboardColors(window.ColorManager.getOriginalBrandGradient());
-    console.log(`🎨 Reset to original brand gradient for partner strategies view`);
-    
-    // Clear any PBC component selections in the horizontal filter
-    const pbcHorizontalBar = document.getElementById(`${NAMESPACE}-horizontal-pbcComponents`);
-    if (pbcHorizontalBar) {
-      const allPBCButtons = pbcHorizontalBar.querySelectorAll('div.selected');
-      allPBCButtons.forEach(button => {
-        button.classList.remove('selected');
-        const buttonPBCColor = getPBCComponentColor(button.textContent);
-        button.style.backgroundColor = `${buttonPBCColor}20`;
-      });
-    }
-    
-    // Clear strategy filter but keep partner filter
-    isStrategySelected = false;
-    
-    // Find the currently selected partner
-    const partnersChildren = partnersColumn.getElementsByClassName(`${NAMESPACE}-data-wrapper`);
-    let selectedPartnerIndex = -1;
-    
-    [...partnersChildren].forEach((child, idx) => {
-      if (child.style.display !== 'none') {
-        selectedPartnerIndex = idx;
-      }
-    });
-    
-    if (selectedPartnerIndex === -1) return;
-    
-    // Find all strategies connected to this partner
-    const connectedStrategies = [];
-    strategyList.forEach((strategy, strategyIdx) => {
-      if (strategy.partners && strategy.partners.includes(selectedPartnerIndex)) {
-        connectedStrategies.push(strategyIdx);
-      }
-    });
-    
-    // Show all connected strategies
-    const strategiesChildren = strategiesColumn.getElementsByClassName(`${NAMESPACE}-data-wrapper`);
-    [...strategiesChildren].forEach((child, idx) => {
-      child.style.display = connectedStrategies.includes(idx) ? 'block' : 'none';
-    });
-    
-    // Show all outcomes connected to these strategies
-    const allConnectedOutcomes = {
-      pbcComponents: new Set(),
-      outputs: new Set(),
-      immediateOutputs: new Set(),
-      intermediateOutputs: new Set(),
-      longTermOutputs: new Set()
-    };
-    
-    connectedStrategies.forEach(strategyIdx => {
-      const strategy = strategyList[strategyIdx];
-      if (strategy.pbcComponents) strategy.pbcComponents.forEach(idx => allConnectedOutcomes.pbcComponents.add(idx));
-      if (strategy.outputs) strategy.outputs.forEach(idx => allConnectedOutcomes.outputs.add(idx));
-      if (strategy.immediateOutputs) strategy.immediateOutputs.forEach(idx => allConnectedOutcomes.immediateOutputs.add(idx));
-      if (strategy.intermediateOutputs) strategy.intermediateOutputs.forEach(idx => allConnectedOutcomes.intermediateOutputs.add(idx));
-      if (strategy.longTermOutputs) strategy.longTermOutputs.forEach(idx => allConnectedOutcomes.longTermOutputs.add(idx));
-    });
-
-    // Filter outcome columns
-    const filterOutcomeColumn = (columnId, connectedSet) => {
-      const column = document.getElementById(columnId);
-      const columnChildren = column.getElementsByClassName(`${NAMESPACE}-data-wrapper`);
-      [...columnChildren].forEach((child, idx) => {
-        child.style.display = connectedSet.has(idx) ? 'block' : 'none';
-      });
-    };
-
-    filterOutcomeColumn(COLUMN_IDS.pbcComponents, allConnectedOutcomes.pbcComponents);
-    filterOutcomeColumn(COLUMN_IDS.outputs, allConnectedOutcomes.outputs);
-    filterOutcomeColumn(COLUMN_IDS.immediateOutputs, allConnectedOutcomes.immediateOutputs);
-    filterOutcomeColumn(COLUMN_IDS.intermediateOutputs, allConnectedOutcomes.intermediateOutputs);
-    filterOutcomeColumn(COLUMN_IDS.longTermOutputs, allConnectedOutcomes.longTermOutputs);
-    
+    window.FilterSystem.showAllPartnerStrategies();
     updateNavigationButtons();
-    
-    // Clear all background highlights
-    const allColumnIds = Object.values(COLUMN_IDS);
-    allColumnIds.forEach(columnId => {
-      const column = document.getElementById(columnId);
-      const columnChildren = column.getElementsByClassName(`${NAMESPACE}-data-wrapper`);
-      [...columnChildren].forEach(child => {
-        child.style.background = 'transparent';
-        
-        const textElements = child.getElementsByClassName(TEXT_CLASS);
-        [...textElements].forEach(textEl => {
-          textEl.style.background = 'transparent';
-          textEl.style.backgroundColor = '';
-          textEl.style.boxShadow = '';
-          textEl.style.opacity = '';
-        });
-      });
-    });
-    
-    clearPartnerStyling();
   };
 
   /**
    * Shows all partners for the currently selected PBC component
    */
   const showAllPBCPartners = () => {
-    if (window.FilterManager.getSelectedItemsSize() === 0) return; // No PBC component selected
-    
-    // Clear partner and strategy filters but keep PBC filter
-    isPartnerSelected = false;
-    isStrategySelected = false;
-    
-    // Get the selected PBC component
-    const selectedPBC = Array.from(window.FilterManager.getSelectedItems())[0];
-    
-    // Find all strategies connected to this PBC component
-    const connectedStrategies = [];
-    strategyList.forEach((strategy, strategyIdx) => {
-      const strategyPBCComponents = strategy.pbcComponents ? strategy.pbcComponents.map(idx => data.pbcComponents[idx]) : [];
-      if (strategyPBCComponents.includes(selectedPBC)) {
-        connectedStrategies.push(strategyIdx);
-      }
-    });
-    
-    // Show all connected strategies
-    const strategiesChildren = strategiesColumn.getElementsByClassName(`${NAMESPACE}-data-wrapper`);
-    [...strategiesChildren].forEach((child, idx) => {
-      child.style.display = connectedStrategies.includes(idx) ? 'block' : 'none';
-    });
-    
-    // Find all partners connected to these strategies
-    const connectedPartners = new Set();
-    connectedStrategies.forEach(strategyIdx => {
-      const strategy = strategyList[strategyIdx];
-      if (strategy.partners) {
-        strategy.partners.forEach(partnerIdx => connectedPartners.add(partnerIdx));
-      }
-    });
-    
-    // Show all connected partners
-    const partnersChildren = partnersColumn.getElementsByClassName(`${NAMESPACE}-data-wrapper`);
-    [...partnersChildren].forEach((child, idx) => {
-      child.style.display = connectedPartners.has(idx) ? 'block' : 'none';
-    });
-    
-    // Show all outcomes connected to these strategies
-    const allConnectedOutcomes = {
-      pbcComponents: new Set(),
-      outputs: new Set(),
-      immediateOutputs: new Set(),
-      intermediateOutputs: new Set(),
-      longTermOutputs: new Set()
-    };
-    
-    connectedStrategies.forEach(strategyIdx => {
-      const strategy = strategyList[strategyIdx];
-      if (strategy.pbcComponents) strategy.pbcComponents.forEach(idx => allConnectedOutcomes.pbcComponents.add(idx));
-      if (strategy.outputs) strategy.outputs.forEach(idx => allConnectedOutcomes.outputs.add(idx));
-      if (strategy.immediateOutputs) strategy.immediateOutputs.forEach(idx => allConnectedOutcomes.immediateOutputs.add(idx));
-      if (strategy.intermediateOutputs) strategy.intermediateOutputs.forEach(idx => allConnectedOutcomes.intermediateOutputs.add(idx));
-      if (strategy.longTermOutputs) strategy.longTermOutputs.forEach(idx => allConnectedOutcomes.longTermOutputs.add(idx));
-    });
-
-    // Filter outcome columns
-    const filterOutcomeColumn = (columnId, connectedSet) => {
-      const column = document.getElementById(columnId);
-      const columnChildren = column.getElementsByClassName(`${NAMESPACE}-data-wrapper`);
-      [...columnChildren].forEach((child, idx) => {
-        child.style.display = connectedSet.has(idx) ? 'block' : 'none';
-      });
-    };
-
-    filterOutcomeColumn(COLUMN_IDS.pbcComponents, allConnectedOutcomes.pbcComponents);
-    filterOutcomeColumn(COLUMN_IDS.outputs, allConnectedOutcomes.outputs);
-    filterOutcomeColumn(COLUMN_IDS.immediateOutputs, allConnectedOutcomes.immediateOutputs);
-    filterOutcomeColumn(COLUMN_IDS.intermediateOutputs, allConnectedOutcomes.intermediateOutputs);
-    filterOutcomeColumn(COLUMN_IDS.longTermOutputs, allConnectedOutcomes.longTermOutputs);
-    
-    // Clear all background highlights
-    const allColumnIds = Object.values(COLUMN_IDS);
-    allColumnIds.forEach(columnId => {
-      const column = document.getElementById(columnId);
-      const columnChildren = column.getElementsByClassName(`${NAMESPACE}-data-wrapper`);
-      [...columnChildren].forEach(child => {
-        child.style.background = 'transparent';
-        
-        const textElements = child.getElementsByClassName(TEXT_CLASS);
-        [...textElements].forEach(textEl => {
-          textEl.style.background = 'transparent';
-          textEl.style.backgroundColor = '';
-          textEl.style.boxShadow = '';
-          textEl.style.opacity = '';
-        });
-      });
-    });
-    
-    clearPartnerStyling();
+    window.FilterSystem.showAllPBCPartners();
     updateNavigationButtons();
   };
 
@@ -1233,176 +531,8 @@ window.onload = async function () {
    * Shows all strategies for the currently selected PBC component
    */
   const showAllPBCStrategies = () => {
-    if (!isStrategySelected && !isPartnerSelected) return;
-    
-    let primaryPBCComponent;
-    let primaryPBCColor;
-    
-    if (window.FilterManager.hasSelectedItems()) {
-      // Use the currently selected PBC component
-      primaryPBCComponent = Array.from(window.FilterManager.getSelectedItems())[0];
-      primaryPBCColor = getPBCComponentColor(primaryPBCComponent);
-    } else if (isStrategySelected) {
-      // Fallback: derive PBC component from selected strategy
-      const strategiesChildren = strategiesColumn.getElementsByClassName(`${NAMESPACE}-data-wrapper`);
-      let selectedStrategyIndex = -1;
-      
-      [...strategiesChildren].forEach((child, idx) => {
-        if (child.style.display !== 'none') {
-          selectedStrategyIndex = idx;
-        }
-      });
-      
-      if (selectedStrategyIndex === -1) return;
-      
-      const selectedStrategy = strategyList[selectedStrategyIndex];
-      const strategyPBCComponents = selectedStrategy.pbcComponents || [];
-      
-      if (strategyPBCComponents.length === 0) return;
-      
-      const primaryPBCIndex = strategyPBCComponents[0];
-      primaryPBCComponent = data.pbcComponents[primaryPBCIndex];
-      primaryPBCColor = getPBCComponentColor(primaryPBCComponent);
-    } else {
-      return; // No valid state to proceed
-    }
-    
-    console.log(`🎨 Applying brand gradient for PBC component: "${primaryPBCComponent}"`);
-    
-    // Apply brand gradient based on the primary PBC component
-    const newGradient = createPBCGradient(primaryPBCColor);
-    updateDashboardColors(newGradient);
-    
-    // Update FilterManager's selected items
-    window.FilterManager.clearSelectedItems();
-    window.FilterManager.addSelectedItem(primaryPBCComponent);
-    
-    // Highlight the corresponding PBC component in the horizontal filter
-    const pbcHorizontalBar = document.getElementById(`${NAMESPACE}-horizontal-pbcComponents`);
-    if (pbcHorizontalBar) {
-      // Clear existing selections
-      const allPBCButtons = pbcHorizontalBar.querySelectorAll('div');
-      allPBCButtons.forEach(button => {
-        if (button.textContent && button.classList.contains('selected')) {
-          button.classList.remove('selected');
-          const buttonPBCColor = getPBCComponentColor(button.textContent);
-          button.style.backgroundColor = `${buttonPBCColor}20`;
-        }
-      });
-      
-      // Highlight the primary PBC component
-      allPBCButtons.forEach(button => {
-        if (button.textContent === primaryPBCComponent) {
-          button.classList.add('selected');
-          button.style.backgroundColor = `${primaryPBCColor}80`;
-          console.log(`🟢 Highlighted PBC component button: "${primaryPBCComponent}"`);
-        }
-      });
-    }
-    
-    // Find all strategies that match the PBC component
-    const connectedStrategies = [];
-    strategyList.forEach((strategy, strategyIdx) => {
-      if (strategy.pbcComponents) {
-        const strategyPBCComponents = strategy.pbcComponents.map(idx => data.pbcComponents[idx]);
-        if (strategyPBCComponents.includes(primaryPBCComponent)) {
-          // If a partner is also selected, only include strategies connected to that partner
-          if (isPartnerSelected) {
-            // Find the selected partner index
-            const partnersChildren = partnersColumn.getElementsByClassName(`${NAMESPACE}-data-wrapper`);
-            let selectedPartnerIndex = -1;
-            [...partnersChildren].forEach((child, idx) => {
-              if (child.style.display !== 'none') {
-                selectedPartnerIndex = idx;
-              }
-            });
-            
-            if (selectedPartnerIndex !== -1 && strategy.partners && strategy.partners.includes(selectedPartnerIndex)) {
-              connectedStrategies.push(strategyIdx);
-            }
-          } else {
-            // No partner filter, include all strategies for this PBC component
-            connectedStrategies.push(strategyIdx);
-          }
-        }
-      }
-    });
-    
-    // Clear strategy filter but keep partner filter if it exists
-    isStrategySelected = false;
-    
-    // Show all connected strategies
-    const strategiesChildren = strategiesColumn.getElementsByClassName(`${NAMESPACE}-data-wrapper`);
-    [...strategiesChildren].forEach((child, idx) => {
-      child.style.display = connectedStrategies.includes(idx) ? 'block' : 'none';
-    });
-    
-    // Show connected outcomes and partners
-    const allConnectedOutcomes = {
-      pbcComponents: new Set(),
-      outputs: new Set(),
-      immediateOutputs: new Set(),
-      intermediateOutputs: new Set(),
-      longTermOutputs: new Set()
-    };
-    
-    connectedStrategies.forEach(strategyIdx => {
-      const strategy = strategyList[strategyIdx];
-      if (strategy.pbcComponents) strategy.pbcComponents.forEach(idx => allConnectedOutcomes.pbcComponents.add(idx));
-      if (strategy.outputs) strategy.outputs.forEach(idx => allConnectedOutcomes.outputs.add(idx));
-      if (strategy.immediateOutputs) strategy.immediateOutputs.forEach(idx => allConnectedOutcomes.immediateOutputs.add(idx));
-      if (strategy.intermediateOutputs) strategy.intermediateOutputs.forEach(idx => allConnectedOutcomes.intermediateOutputs.add(idx));
-      if (strategy.longTermOutputs) strategy.longTermOutputs.forEach(idx => allConnectedOutcomes.longTermOutputs.add(idx));
-    });
-
-    // Filter outcome columns
-    const filterOutcomeColumn = (columnId, connectedSet) => {
-      const column = document.getElementById(columnId);
-      const columnChildren = column.getElementsByClassName(`${NAMESPACE}-data-wrapper`);
-      [...columnChildren].forEach((child, idx) => {
-        child.style.display = connectedSet.has(idx) ? 'block' : 'none';
-      });
-    };
-
-    filterOutcomeColumn(COLUMN_IDS.pbcComponents, allConnectedOutcomes.pbcComponents);
-    filterOutcomeColumn(COLUMN_IDS.outputs, allConnectedOutcomes.outputs);
-    filterOutcomeColumn(COLUMN_IDS.immediateOutputs, allConnectedOutcomes.immediateOutputs);
-    filterOutcomeColumn(COLUMN_IDS.intermediateOutputs, allConnectedOutcomes.intermediateOutputs);
-    filterOutcomeColumn(COLUMN_IDS.longTermOutputs, allConnectedOutcomes.longTermOutputs);
-    
-    // Filter partners based on the connected strategies
-    const allConnectedPartners = new Set();
-    connectedStrategies.forEach(strategyIdx => {
-      const strategy = strategyList[strategyIdx];
-      if (strategy.partners) strategy.partners.forEach(idx => allConnectedPartners.add(idx));
-    });
-    
-    const partnersChildren = partnersColumn.getElementsByClassName(`${NAMESPACE}-data-wrapper`);
-    [...partnersChildren].forEach((child, idx) => {
-      child.style.display = allConnectedPartners.has(idx) ? 'block' : 'none';
-    });
-    
+    window.FilterSystem.showAllPBCStrategies();
     updateNavigationButtons();
-    
-    // Clear all background highlights
-    const allColumnIds = Object.values(COLUMN_IDS);
-    allColumnIds.forEach(columnId => {
-      const column = document.getElementById(columnId);
-      const columnChildren = column.getElementsByClassName(`${NAMESPACE}-data-wrapper`);
-      [...columnChildren].forEach(child => {
-        child.style.background = 'transparent';
-        
-        const textElements = child.getElementsByClassName(TEXT_CLASS);
-        [...textElements].forEach(textEl => {
-          textEl.style.background = 'transparent';
-          textEl.style.backgroundColor = '';
-          textEl.style.boxShadow = '';
-          textEl.style.opacity = '';
-        });
-      });
-    });
-    
-    clearPartnerStyling();
   };
 
   
@@ -1674,8 +804,8 @@ window.onload = async function () {
   
   // Set up navigation buttons
   seeAllButton.className = `${NAMESPACE}-see-all`;
-  seeAllButton.style.display = 'none';
-  seeAllButton.textContent = 'See All Strategies';
+  seeAllButton.style.display = 'block';
+  seeAllButton.textContent = 'View All Strategies';
   strategiesColumn.appendChild(seeAllButton);
   seeAllButton.onclick = clearAllFilters;
 
@@ -1694,7 +824,7 @@ window.onload = async function () {
   showAllPBCStrategiesButton.onclick = showAllPBCStrategies;
 
   seeAllPartnersButton.className = `${NAMESPACE}-see-all`;
-  seeAllPartnersButton.style.display = 'none';
+  seeAllPartnersButton.style.display = 'block';
   seeAllPartnersButton.textContent = 'See All Partners';
   partnersColumn.appendChild(seeAllPartnersButton);
   seeAllPartnersButton.onclick = clearAllFilters;
@@ -1724,30 +854,9 @@ window.onload = async function () {
   
   // Auto-select the first PBC component on load
   setTimeout(() => {
-    const pbcHorizontalBar = document.getElementById(`${NAMESPACE}-horizontal-pbcComponents`);
-    if (pbcHorizontalBar && data.pbcComponents && data.pbcComponents.length > 0) {
-      const firstPBCComponent = data.pbcComponents[0];
-      const firstPBCButton = [...pbcHorizontalBar.querySelectorAll('div')]
-        .find(button => button.textContent === firstPBCComponent);
-      
-      if (firstPBCButton) {
-        // Select the first PBC component
-        window.FilterManager.addSelectedItem(firstPBCComponent);
-        firstPBCButton.classList.add('selected');
-        
-        // Apply selected styling
-        const pbcColor = getPBCComponentColor(firstPBCComponent);
-        firstPBCButton.style.backgroundColor = `${pbcColor}80`;
-        
-        // Update brand gradient based on selected PBC component
-        const newGradient = createPBCGradient(pbcColor);
-        updateDashboardColors(newGradient);
-        
-        console.log(`🎯 Auto-selected first PBC Component on load: "${firstPBCComponent}"`);
-      }
+    if (data.pbcComponents && data.pbcComponents.length > 0) {
+      window.FilterSystem.selectPBC(data.pbcComponents[0]);
     }
-    
-    applyPartnerFiltering();
   }, 100);
 
   
