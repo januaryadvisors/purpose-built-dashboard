@@ -219,7 +219,7 @@ window.FilterManager = (function() {
         horizontalBar.style.gap = '10px';
         horizontalBar.style.padding = '15px';
         const currentGradient = window.ColorManager.getCurrentBrandGradient();
-        horizontalBar.style.backgroundColor = currentGradient[colorIndex] + '1A';
+        horizontalBar.style.backgroundColor = currentGradient[0];
         horizontalBar.style.border = `2px solid ${currentGradient[colorIndex]}80`;
         horizontalBar.style.borderRadius = '8px';
         horizontalBar.style.marginBottom = '20px';
@@ -229,7 +229,7 @@ window.FilterManager = (function() {
         titleDiv.style.fontWeight = 'bold';
         titleDiv.style.marginBottom = '10px';
         titleDiv.style.width = '100%';
-        titleDiv.style.color = currentGradient[colorIndex];
+        titleDiv.style.color = currentGradient[9];
         titleDiv.textContent = `${columnLabel} (click to filter pillars):`;
         
         // Add items as clickable toggle buttons
@@ -445,7 +445,7 @@ window.FilterManager = (function() {
             selectedPartnerName = data.partners[idx];
           }
         });
-        showAllPBCStrategiesButton.textContent = `← Back to ${selectedPBCName.toUpperCase()} strategies`;
+        showAllPBCStrategiesButton.textContent = `← Back to all ${selectedPBCName.toUpperCase()} strategies`;
       } else {
         showAllPBCStrategiesButton.textContent = `← Back to ${selectedPBCName.toUpperCase()} strategies`;
       }
