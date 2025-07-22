@@ -40,6 +40,7 @@ const parse = async () => {
       {
         label: row.Strategy,
         details: row['Paragraph description'],
+        activities: row['Activities'] || '', // Add Activities column
         outputs: arrayify(row.Output).map(output => outputs.indexOf(output)),
         immediateOutputs: arrayify(row['Immediate Outcomes']).map(output =>
           immediateOutputs.indexOf(output),

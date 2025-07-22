@@ -58,13 +58,13 @@ window.ColorManager = (function() {
     };
     
     return [
-      generateShade(r, g, b, 0.7),    // Lightest - PBC Components
-      generateShade(r, g, b, 0.5),    // Light - Partners  
-      generateShade(r, g, b, 0.3),    // Medium-light - Strategies
-      baseColor,                      // Base color - Outputs
-      generateDarkShade(r, g, b, 0.8), // Medium-dark - Immediate Outcomes
-      generateDarkShade(r, g, b, 0.6), // Dark - Intermediate Outcomes
-      generateDarkShade(r, g, b, 0.4)  // Darkest - Long-Term Outcomes
+      generateShade(r, g, b, 1),    // Lightest - PBC Components
+      generateShade(r, g, b, 0.8),    // Light - Partners  
+      generateShade(r, g, b, 0.7), 
+      generateShade(r, g, b, 0.6),    // Medium-light - Strategies
+      generateShade(r, g, b, 0.5),    // Medium-light - Strategies
+      generateShade(r, g, b, 0.4),
+      generateShade(r, g, b, 0.3)
     ];
   };
 

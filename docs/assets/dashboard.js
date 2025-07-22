@@ -209,8 +209,6 @@ window.onload = async function () {
     const modalHeader = createElement(modalContent, 'div', 'modal-header');
     const researchWrapper = createElement(modalContent, 'div');
     const researchParagraph = createElement(researchWrapper, 'div');
-    const researchHeader = createElement(researchWrapper, 'div', 'research-header');
-    researchHeader.innerText = 'Research';
     const researchBody = createElement(researchWrapper, 'div');
     
     return { modal, modalHeader, researchParagraph, researchBody };
@@ -229,6 +227,11 @@ window.onload = async function () {
     
     // Set strategy list for easy access
     strategyList = Object.values(data.strategies);
+    
+    // 🔍 DEBUG: Check strategy ordering
+    console.log('🔍 Strategy Keys (what shows in column):', Object.keys(data.strategies));
+    console.log('🔍 Strategy List (what modal uses):', strategyList.map(s => s.label));
+    console.log('🔍 Activities in strategyList order:', strategyList.map(s => ({ label: s.label, activities: s.activities?.substring(0, 50) + '...' })));
     
     // Initialize FilterSystem with loaded data
     window.FilterSystem.init({
@@ -444,7 +447,7 @@ window.onload = async function () {
     if (partnersChildren[partnerIndex]) {
       const partnerTextElement = partnersChildren[partnerIndex].querySelector(`.${TEXT_CLASS}`);
       if (partnerTextElement) {
-        partnerTextElement.style.background = `${highlightColor}80`;
+        partnerTextElement.style.background = `${highlightColor}50`;
       }
     }
     
@@ -453,7 +456,7 @@ window.onload = async function () {
     const strategiesChildren = strategiesColumn.getElementsByClassName(`${NAMESPACE}-data-wrapper`);
     connectedStrategies.forEach(strategyIdx => {
       if (strategiesChildren[strategyIdx]) {
-        strategiesChildren[strategyIdx].style.background = `${highlightColor}80`;
+        strategiesChildren[strategyIdx].style.background = `${highlightColor}50`;
       }
     });
   };
@@ -555,31 +558,45 @@ window.onload = async function () {
    * @param {number} strategyIndex - Index of the strategy to show details for
    * @returns {Function} Event handler function
    */
-  const createStrategyModalHandler = (strategyIndex) => () => {
+      const createStrategyModalHandler = (strategyIndex) => () => {
     modalHeader.innerText = strategyList[strategyIndex].label;
-    researchParagraph.innerText = strategyList[strategyIndex].details;
 
-    // Clear existing research items
-    [...researchBody.children].forEach((c, i) => i !== 0 && c.remove());
+    // Clear existing content - more thorough clearing
+    researchBody.innerHTML = ''; // Complete clear instead of selective removal
 
-    // Add research items
-    strategyList[strategyIndex].research.forEach(r => {
-      const researchEl = createElement(researchBody, 'div', null, 'research-item');
-      const researchCitation = createElement(researchEl, 'div');
-      researchCitation.innerText = r.citation;
-
-      const researchLink = document.createElement('a');
-      researchLink.setAttribute('href', r.citationLink);
-      researchLink.innerText = r.citationLinkText;
-      researchLink.setAttribute('rel', 'noopener noreferrer');
-      researchLink.setAttribute('target', '_blank');
-      researchEl.appendChild(researchLink);
-
-      const researchOutcomesWrapper = createElement(researchEl, 'div', null, 'research-outcomes-wrapper');
-      researchOutcomesWrapper.innerText = `Related Outcomes: `;
-      const researchOutcomes = createElement(researchOutcomesWrapper, 'span', null, 'research-outcomes');
-      researchOutcomes.innerText = r.relatedOutcomes.join(', ');
-    });
+    // Show Activities instead of research
+    const strategy = strategyList[strategyIndex];
+    
+    if (strategy.activities && strategy.activities.trim()) {
+      const activitiesEl = createElement(researchBody, 'div', null, 'activities-section');
+      
+      // Add section header
+      const activitiesHeader = createElement(activitiesEl, 'div', 'activities-header');
+      activitiesHeader.innerText = 'List of Activities';
+      
+      // Create bullet list from activities
+      const activitiesList = document.createElement('ul');
+      activitiesList.className = `${NAMESPACE}-activities-list`;
+      
+      // Split activities by newlines and create list items
+      const activityItems = strategy.activities.split('\n')
+        .map(item => item.trim())
+        .filter(item => item.length > 0); // Remove empty lines
+      
+      activityItems.forEach(activity => {
+        const listItem = document.createElement('li');
+        listItem.className = `${NAMESPACE}-activity-item`;
+        listItem.innerText = activity;
+        activitiesList.appendChild(listItem);
+      });
+      
+      activitiesEl.appendChild(activitiesList);
+      
+    } else {
+      // Fallback if no activities data
+      const noActivitiesEl = createElement(researchBody, 'div', null, 'no-activities');
+      noActivitiesEl.innerText = 'No activities information available for this strategy.';
+    }
 
     modal.style.display = 'block';
   };
@@ -653,7 +670,7 @@ window.onload = async function () {
           
           // Highlight the strategy itself
           dataDiv.setAttribute('data-original-bg-before-hover', dataDiv.style.background || '');
-          dataDiv.style.background = `${strategyColor}80`;
+          dataDiv.style.background = `${strategyColor}50`;
           
           // Helper function to highlight outcome items
           const highlightOutcomeItems = (columnId, indices) => {
@@ -667,7 +684,7 @@ window.onload = async function () {
                 const textElement = columnChildren[idx].querySelector(`.${TEXT_CLASS}`);
                 if (textElement) {
                   textElement.setAttribute('data-original-bg-before-hover', textElement.style.background || '');
-                  textElement.style.background = `${strategyColor}80`;
+                  textElement.style.background = `${strategyColor}50`;
                 }
               }
             });
@@ -766,7 +783,7 @@ window.onload = async function () {
           
           // Highlight the hovered outcome item
           textDiv.setAttribute('data-original-bg-before-hover', textDiv.style.background || '');
-          textDiv.style.background = `${highlightColor}80`;
+          textDiv.style.background = `${highlightColor}50`;
           
           // Highlight connected strategies
           const strategiesColumn = document.getElementById(COLUMN_IDS.strategies);
@@ -774,7 +791,7 @@ window.onload = async function () {
           connectedStrategies.forEach(strategyIdx => {
             if (strategiesChildren[strategyIdx]) {
               strategiesChildren[strategyIdx].setAttribute('data-original-bg-before-hover', strategiesChildren[strategyIdx].style.background || '');
-              strategiesChildren[strategyIdx].style.background = `${highlightColor}80`;
+              strategiesChildren[strategyIdx].style.background = `${highlightColor}50`;
             }
           });
         };

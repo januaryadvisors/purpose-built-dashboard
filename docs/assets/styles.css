@@ -133,23 +133,25 @@
   font: inherit;
 }
 .momentum-dashboard-button {
-  font-weight: 500;
+  font-weight: 500 !important;
   text-align: left;
-  text-decoration: underline;
+  line-height: 120% !important;
 }
 .momentum-dashboard-button:hover {
   color: var(--med-light-charcoal) !important;
 }
 .momentum-dashboard-filter-button-wrapper {
-  color: var(--flame) !important;
   display: flex;
   font-size: 0.9em;
   justify-content: flex-end;
-  text-decoration: underline;
 }
-.momentum-dashboard-filter-button-wrapper:hover {
-  color: var(--flame) !important;
+
+.momentum-dashboard-filter-button-wrapper button {
+  border: 1px solid #333 !important;
+  margin: 6px 0px;
+  padding: 0px 6px;
 }
+
 .momentum-dashboard-see-all {
   display: flex;
   justify-content: center;

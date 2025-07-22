@@ -80,15 +80,6 @@ window.DataLoader = (function() {
           fetchCSV(CONFIG.SHEET_GIDS.header_tooltips),
           fetchCSV(CONFIG.SHEET_GIDS.input_tooltips)
         ]);
-
-        console.log('🔍 RAW DATA FROM LOGIC MODEL EXPANDED SHEET:');
-        console.log('📄 First 1000 characters:', modelRaw.substring(0, 1000));
-        console.log('📊 Total length:', modelRaw.length);
-        console.log('📋 First 5 lines:');
-        modelRaw.split('\n').slice(0, 5).forEach((line, i) => {
-          console.log(`Line ${i + 1}:`, line);
-        });
-
         // Improved CSV parser to handle multiline fields
         const parseCSV = (csvText) => {
           const rows = [];
@@ -186,6 +177,12 @@ window.DataLoader = (function() {
         model.slice(0, 3).forEach((row, i) => {
           console.log(`Row ${i + 1}:`, row);
         });
+
+        // 🔍 DEBUG: Check Activities column specifically
+        console.log('\n🎯 Activities column data:');
+        model.slice(0, 3).forEach((row, i) => {
+          console.log(`Strategy "${row.Strategy}" -> Activities: "${row.Activities}"`);
+        });
         
         // Check specifically for PBC Components column
         if (model.length > 0) {
@@ -222,6 +219,7 @@ window.DataLoader = (function() {
             {
               label: row.Strategy,
               details: row['Paragraph description'],
+              activities: row['Activities'] || '', // Add Activities column
               outputs: arrayify(row.Output).map(output => outputs.indexOf(output)),
               immediateOutputs: arrayify(row['Immediate Outcomes']).map(output =>
                 immediateOutputs.indexOf(output),

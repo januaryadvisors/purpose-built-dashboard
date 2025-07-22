@@ -140,6 +140,29 @@ window.FilterSystem = (function() {
   };
 
   /**
+   * Generate a darker shade of a given color
+   * @param {string} color - Hex color code
+   * @param {number} factor - Darkening factor (0.7 = 30% darker)
+   * @returns {string} Darker hex color
+   */
+  const generateDarkerShade = (color, factor = 0.7) => {
+    // Remove # if present
+    const cleanColor = color.replace('#', '');
+    
+    // Parse RGB components
+    const r = parseInt(cleanColor.substr(0, 2), 16);
+    const g = parseInt(cleanColor.substr(2, 2), 16);
+    const b = parseInt(cleanColor.substr(4, 2), 16);
+    
+    // Generate darker shade
+    const newR = Math.round(Math.max(0, r * factor));
+    const newG = Math.round(Math.max(0, g * factor));
+    const newB = Math.round(Math.max(0, b * factor));
+    
+    return `#${newR.toString(16).padStart(2, '0')}${newG.toString(16).padStart(2, '0')}${newB.toString(16).padStart(2, '0')}`;
+  };
+
+  /**
    * Update contextual "Back to..." button colors based on current PBC selection
    */
   const updateContextualButtonColors = () => {
@@ -158,11 +181,12 @@ window.FilterSystem = (function() {
     if (filterState.selectedPBC) {
       // Apply PBC theme color to contextual buttons only
       const pbcColor = window.ColorManager.getPBCColor(filterState.selectedPBC, data);
+      const darkerPbcColor = generateDarkerShade(pbcColor, 0.7);
       
       contextualButtons.forEach(button => {
-        button.style.setProperty('background-color', `${pbcColor}20`, 'important');
+        button.style.setProperty('background-color', `${pbcColor}10`, 'important');
         button.style.setProperty('border-color', pbcColor, 'important');
-        button.style.setProperty('color', pbcColor, 'important');
+        button.style.setProperty('color', darkerPbcColor, 'important');
       });
     } else {
       // Reset contextual buttons to default style
@@ -170,6 +194,49 @@ window.FilterSystem = (function() {
         button.style.removeProperty('background-color');
         button.style.removeProperty('border-color');
         button.style.removeProperty('color');
+      });
+    }
+  };
+
+  /**
+   * Update strategy column text colors based on current PBC selection
+   */
+  const updateStrategyColumnColors = () => {
+    const strategiesColumn = document.getElementById(columnIds.strategies);
+    if (!strategiesColumn) return;
+
+    if (filterState.selectedPBC) {
+      // Apply darker PBC color to strategy text elements
+      const pbcColor = window.ColorManager.getPBCColor(filterState.selectedPBC, data);
+      const darkerPbcColor = generateDarkerShade(pbcColor, 0.5); // Made darker (was 0.7)
+      
+      // Update strategy button text
+      const strategyButtons = strategiesColumn.querySelectorAll(`.${namespace}-datum.${namespace}-button`);
+      strategyButtons.forEach(button => {
+        button.style.setProperty('color', darkerPbcColor, 'important');
+      });
+      
+      // Update "Learn more" button text and background
+      const learnMoreButtons = strategiesColumn.querySelectorAll(`.${namespace}-filter-button`);
+      learnMoreButtons.forEach(button => {
+        button.style.setProperty('color', darkerPbcColor, 'important');
+        button.style.setProperty('background-color', `${pbcColor}15`, 'important');
+        button.style.setProperty('border-radius', '4px', 'important');
+        button.style.setProperty('padding', '0px 6px', 'important');
+      });
+    } else {
+      // Reset to default colors
+      const strategyButtons = strategiesColumn.querySelectorAll(`.${namespace}-datum.${namespace}-button`);
+      strategyButtons.forEach(button => {
+        button.style.removeProperty('color');
+      });
+      
+      const learnMoreButtons = strategiesColumn.querySelectorAll(`.${namespace}-filter-button`);
+      learnMoreButtons.forEach(button => {
+        button.style.removeProperty('color');
+        button.style.removeProperty('background-color');
+        button.style.removeProperty('border-radius');
+        button.style.removeProperty('padding');
       });
     }
   };
@@ -226,6 +293,9 @@ window.FilterSystem = (function() {
 
     // Update navigation button colors for contextual buttons
     updateContextualButtonColors();
+
+    // Update strategy column text colors
+    updateStrategyColumnColors();
 
     // Clear visual highlights
     clearHighlights();

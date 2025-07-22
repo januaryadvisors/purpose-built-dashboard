@@ -53,6 +53,14 @@ const parseFromGoogleSheet = async () => {
     const headerTooltips = d3dsv.csvParseRows(headerTooltipsRaw);
     const inputTooltips = d3dsv.csvParse(inputTooltipsRaw);
 
+    // 🔍 DEBUG: Let's see what columns are available
+    console.log('📊 Available columns in main sheet:');
+    if (model.length > 0) {
+      console.log(Object.keys(model[0]));
+      console.log('\n📋 Sample row data:');
+      console.log(model[0]);
+    }
+
     const inputs = getUnique(model, 'Inputs');
     const partners = getUnique(model, 'Partners');
     const outputs = getUnique(model, 'Output');
@@ -66,6 +74,7 @@ const parseFromGoogleSheet = async () => {
         {
           label: row.Strategy,
           details: row['Paragraph description'],
+          activities: row['Activities'] || '', // Add Activities column
           outputs: arrayify(row.Output).map(output => outputs.indexOf(output)),
           immediateOutputs: arrayify(row['Immediate Outcomes']).map(output =>
             immediateOutputs.indexOf(output),
