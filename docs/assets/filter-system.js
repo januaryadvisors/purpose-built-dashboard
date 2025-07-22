@@ -140,6 +140,41 @@ window.FilterSystem = (function() {
   };
 
   /**
+   * Update contextual "Back to..." button colors based on current PBC selection
+   */
+  const updateContextualButtonColors = () => {
+    // Find all navigation buttons
+    const allSeeAllButtons = document.querySelectorAll(`.${namespace}-see-all`);
+    const contextualButtons = [];
+    
+    allSeeAllButtons.forEach(button => {
+      const text = button.textContent || '';
+      // Only target contextual "Back to..." or "Show..." buttons, not global "View All" buttons
+      if (text.includes('← Show') || text.includes('← Back')) {
+        contextualButtons.push(button);
+      }
+    });
+
+    if (filterState.selectedPBC) {
+      // Apply PBC theme color to contextual buttons only
+      const pbcColor = window.ColorManager.getPBCColor(filterState.selectedPBC, data);
+      
+      contextualButtons.forEach(button => {
+        button.style.setProperty('background-color', `${pbcColor}20`, 'important');
+        button.style.setProperty('border-color', pbcColor, 'important');
+        button.style.setProperty('color', pbcColor, 'important');
+      });
+    } else {
+      // Reset contextual buttons to default style
+      contextualButtons.forEach(button => {
+        button.style.removeProperty('background-color');
+        button.style.removeProperty('border-color');
+        button.style.removeProperty('color');
+      });
+    }
+  };
+
+  /**
    * Update visual state (colors, buttons, etc.) based on current filters
    */
   const updateVisualState = () => {
@@ -149,9 +184,13 @@ window.FilterSystem = (function() {
       const newGradient = window.ColorManager.generatePBCGradient(pbcColor);
       window.ColorManager.updateBrandGradient(newGradient, namespace, Object.values(columnIds), {});
 
-      // Update horizontal PBC buttons
+      // Update horizontal PBC buttons and bar background
       const pbcBar = document.getElementById(`${namespace}-horizontal-pbcComponents`);
       if (pbcBar) {
+        // Update the horizontal bar's background color to match selected PBC
+        pbcBar.style.backgroundColor = `${pbcColor}15`; // Light background
+        pbcBar.style.border = `2px solid ${pbcColor}40`; // Subtle border
+        
         const buttons = pbcBar.querySelectorAll('div');
         buttons.forEach(button => {
           if (button.textContent === filterState.selectedPBC) {
@@ -169,9 +208,13 @@ window.FilterSystem = (function() {
       const originalGradient = window.ColorManager.getOriginalBrandGradient();
       window.ColorManager.updateBrandGradient(originalGradient, namespace, Object.values(columnIds), {});
       
-      // Clear all PBC component button highlights
+      // Reset horizontal bar to default colors and clear button highlights
       const pbcBar = document.getElementById(`${namespace}-horizontal-pbcComponents`);
       if (pbcBar) {
+        // Reset bar to original neutral color
+        pbcBar.style.backgroundColor = originalGradient[0];
+        pbcBar.style.border = `2px solid ${originalGradient[0]}80`;
+        
         const buttons = pbcBar.querySelectorAll('div');
         buttons.forEach(button => {
           button.classList.remove('selected');
@@ -180,6 +223,9 @@ window.FilterSystem = (function() {
         });
       }
     }
+
+    // Update navigation button colors for contextual buttons
+    updateContextualButtonColors();
 
     // Clear visual highlights
     clearHighlights();
