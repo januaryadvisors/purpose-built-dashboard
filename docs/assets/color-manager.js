@@ -3,16 +3,22 @@ window.ColorManager = (function() {
 
   // PBC Component color palette - expanded to support more components
   const pbcColorPalette = [
-    '#43A22E', // Blue (Economic Vitality)
-    '#E55525', // Green (Education)
-    '#2A5384', // Orange/Peach (Community Vibrancy)
-    '#582D60', // Purple (fourth component)
+    '#7bbe6d', // Blue (Economic Vitality)
+    '#9BADC1', // Green (Education)
+    '#E8845F', // Orange/Peach (Community Vibrancy)
+    '#4DBAB1', // Purple (fourth component)
     '#F2D480', // Yellow (fifth component if needed)
     '#8FB8C5', // Light Blue (sixth component if needed)
   ];
 
   // Original brand gradient - stored for resetting
-  const originalBrandGradient = ['#E8EDF1', '#E3EAF0', '#E6EEF4', '#DDE7EF', '#C1D9E3', '#C1D9E3', '#B5C8D1'];
+  const originalBrandGradient = [  '#F5F5F5',
+    '#ECECEC',
+    '#E3E3E3',
+    '#D9D9D8',
+    '#D0CFCE',
+    '#C8C7C6',
+    '#CFCCCA'];
   
   // Current brand gradient - will be modified based on selected PBC component
   let brandGradient = [...originalBrandGradient];

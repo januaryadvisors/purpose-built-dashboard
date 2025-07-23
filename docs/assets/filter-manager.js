@@ -213,16 +213,40 @@ window.FilterManager = (function() {
     
     // Create horizontal bar if it doesn't exist
     if (!horizontalBar) {
-        horizontalBar = addElement(dashboard, 'div', `horizontal-${dataKey}`);
+        // Create main container for title and horizontal bar
+        const pbcContainer = addElement(dashboard, 'div', `pbc-container-${dataKey}`);
+        pbcContainer.style.display = 'flex';
+        pbcContainer.style.alignItems = 'center';
+        pbcContainer.style.gap = '20px';
+        pbcContainer.style.marginBottom = '20px';
+        pbcContainer.style.padding = '15px';
+        pbcContainer.style.flexWrap = 'wrap'; // Allow wrapping on smaller screens
+        
+        // Create left side title for current selection
+        const currentSelectionTitle = addElement(pbcContainer, 'div', `current-selection-${dataKey}`);
+        currentSelectionTitle.style.fontSize = '2.5em';
+        currentSelectionTitle.style.fontWeight = 'bold';
+        currentSelectionTitle.style.flex = '1';
+        currentSelectionTitle.style.minWidth = '250px';
+        currentSelectionTitle.style.marginBottom = '10px'; // Space when wrapped
+        const currentGradient = window.ColorManager.getCurrentBrandGradient();
+        currentSelectionTitle.style.color = currentGradient[9];
+        currentSelectionTitle.textContent = 'Select a PBC Component';
+        
+        // Store reference to title for updates
+        window.currentPBCTitle = currentSelectionTitle;
+        
+        // Create right side horizontal bar
+        horizontalBar = addElement(pbcContainer, 'div', `horizontal-${dataKey}`);
         horizontalBar.style.display = 'flex';
         horizontalBar.style.flexWrap = 'wrap';
         horizontalBar.style.gap = '10px';
         horizontalBar.style.padding = '15px';
-        const currentGradient = window.ColorManager.getCurrentBrandGradient();
         horizontalBar.style.backgroundColor = currentGradient[0];
         horizontalBar.style.border = `2px solid ${currentGradient[colorIndex]}80`;
         horizontalBar.style.borderRadius = '8px';
-        horizontalBar.style.marginBottom = '20px';
+        horizontalBar.style.flex = '2';
+        horizontalBar.style.minWidth = '350px';
         
         // Add title
         const titleDiv = addElement(horizontalBar, 'div');
@@ -255,7 +279,15 @@ window.FilterManager = (function() {
             // Add hover and selected state handling
             itemDiv.addEventListener('mouseenter', () => {
               if (!itemDiv.classList.contains('selected')) {
-                itemDiv.style.backgroundColor = `${pbcColor}40`;
+                // Check if we're in "All Pillars" mode or specific PBC mode
+                if (window.FilterSystem && window.FilterSystem.isPBCSelected && window.FilterSystem.isPBCSelected()) {
+                  // Specific PBC is selected - use this button's own PBC component color
+                  itemDiv.style.backgroundColor = `${pbcColor}40`;
+                } else {
+                  // "All Pillars" mode - use gray color
+                  const grayColor = '#6B7280';
+                  itemDiv.style.backgroundColor = `${grayColor}40`;
+                }
               }
             });
             
@@ -282,9 +314,16 @@ window.FilterManager = (function() {
                 // Reset to unselected styling for PBC components
                 const pbcColor = getPBCColor(item);
                 itemDiv.style.backgroundColor = `${pbcColor}20`;
+                itemDiv.style.color = pbcColor; // Reset to original PBC color text
                 
                 // Reset to original brand gradient when PBC component is deselected
                 updateBrandGradient(window.ColorManager.getOriginalBrandGradient());
+                
+                // Update title to show no selection
+                if (window.currentPBCTitle) {
+                  window.currentPBCTitle.textContent = 'Select a PBC Component';
+                  window.currentPBCTitle.style.color = window.ColorManager.getCurrentBrandGradient()[9];
+                }
                 
                 // ✅ SYNC WITH FILTER SYSTEM
                 if (window.FilterSystem && window.FilterSystem.clearAllFilters) {
@@ -292,7 +331,7 @@ window.FilterManager = (function() {
                 }
               } else {
                 // First, deselect all other PBC Components
-                const allPBCButtons = horizontalBar.querySelectorAll('div');
+                const allPBCButtons = horizontalBar.querySelectorAll('div:not(.all-pillars-button)');
                 allPBCButtons.forEach(button => {
                   if (button.textContent && button.classList.contains('selected')) {
                     selectedItems.delete(button.textContent);
@@ -301,6 +340,7 @@ window.FilterManager = (function() {
                     // Reset styling for deselected PBC components
                     const buttonPBCColor = getPBCColor(button.textContent);
                     button.style.backgroundColor = `${buttonPBCColor}20`;
+                    button.style.color = buttonPBCColor; // Reset to original PBC color text
                   }
                 });
                 
@@ -310,11 +350,18 @@ window.FilterManager = (function() {
                 
                 // Apply selected styling for PBC components
                 const pbcColor = getPBCColor(item);
-                itemDiv.style.backgroundColor = `${pbcColor}80`;
+                itemDiv.style.backgroundColor = pbcColor; // Full opacity for darker active state
+                itemDiv.style.color = 'white'; // White text for better accessibility
                 
                 // Update brand gradient based on selected PBC component
                 const newGradient = generatePBCGradient(pbcColor);
                 updateBrandGradient(newGradient);
+                
+                // Update title to show selected PBC component
+                if (window.currentPBCTitle) {
+                  window.currentPBCTitle.textContent = item;
+                  window.currentPBCTitle.style.color = pbcColor;
+                }
                 
                 // ✅ SYNC WITH FILTER SYSTEM
                 if (window.FilterSystem && window.FilterSystem.selectPBC) {
@@ -342,11 +389,45 @@ window.FilterManager = (function() {
           
         });
         
-        // Insert the horizontal bar before the dashboardWrapper
-        dashboard.insertBefore(horizontalBar, dashboardWrapper);
+        // Add simplified "All Pillars" button at the end
+        const allPillarsDiv = addElement(horizontalBar, 'div');
+        allPillarsDiv.classList.add('momentum-dashboard-filter-button');
+        allPillarsDiv.classList.add('all-pillars-button');
+        allPillarsDiv.textContent = 'All Pillars';
+        
+        // Simple styling - inherit most from the base filter button class
+        const neutralColor = '#6B7280';
+        allPillarsDiv.style.backgroundColor = `${neutralColor}20`;
+        allPillarsDiv.style.borderColor = `${neutralColor}80`;
+        allPillarsDiv.style.color = neutralColor;
+        
+        // Simple click handler - just clear all filters
+        allPillarsDiv.addEventListener('click', () => {
+          if (window.FilterSystem && window.FilterSystem.clearAllFilters) {
+            window.FilterSystem.clearAllFilters();
+          }
+        });
+        
+        // Insert the PBC container before the dashboardWrapper
+        dashboard.insertBefore(pbcContainer, dashboardWrapper);
       } else {
         horizontalBar.style.display = 'flex';
       }
+  };
+
+  // Function to update the PBC title display
+  const updatePBCTitle = (pbcComponent = null, data = null) => {
+    if (!window.currentPBCTitle) return;
+    
+    if (pbcComponent && data) {
+      window.currentPBCTitle.textContent = pbcComponent;
+      const pbcColor = window.ColorManager.getPBCColor(pbcComponent, data);
+      window.currentPBCTitle.style.color = pbcColor;
+    } else {
+      window.currentPBCTitle.textContent = 'All Pillars';
+      const neutralColor = '#6B7280';
+      window.currentPBCTitle.style.color = neutralColor;
+    }
   };
 
   // Function to clear all filters and show all columns
@@ -416,14 +497,12 @@ window.FilterManager = (function() {
   // Function to update button visibility based on current filter state
   const updateButtonVisibility = (config) => {
     const {
-      seeAllButton, seeAllPartnersButton, showAllPartnerStrategiesButton, 
+      showAllPartnerStrategiesButton, 
       showAllPBCStrategiesButton, showAllPBCPartnersButton,
       clickedStrategy, clickedPartner, namespace, partnersId, data
     } = config;
 
-    // Hide all buttons first
-    seeAllButton.style.display = 'none';
-    seeAllPartnersButton.style.display = 'none';
+    // Hide all contextual buttons first
     showAllPartnerStrategiesButton.style.display = 'none';
     showAllPBCStrategiesButton.style.display = 'none';
     showAllPBCPartnersButton.style.display = 'none';
@@ -434,57 +513,33 @@ window.FilterManager = (function() {
       // Get the selected PBC component name
       const selectedPBCName = Array.from(selectedItems)[0];
       
-      // Update button text with the actual PBC component name and context
-      if (clickedPartner) {
-        // Find the selected partner name
-        const partnersColumn = document.getElementById(partnersId);
-        const partnersChildren = partnersColumn.getElementsByClassName(`${namespace}-data-wrapper`);
-        let selectedPartnerName = '';
-        [...partnersChildren].forEach((child, idx) => {
-          if (child.style.display !== 'none') {
-            selectedPartnerName = data.partners[idx];
-          }
-        });
-        showAllPBCStrategiesButton.textContent = `← Back to all ${selectedPBCName.toUpperCase()} strategies`;
-      } else {
-        showAllPBCStrategiesButton.textContent = `← Back to ${selectedPBCName.toUpperCase()} strategies`;
-      }
-      
+      // Update button text with the actual PBC component name
+      showAllPBCStrategiesButton.textContent = `← Back to ${selectedPBCName.toUpperCase()} strategies`;
       showAllPBCPartnersButton.textContent = `← Back to ${selectedPBCName.toUpperCase()} partners`;
       
-      // PBC component is selected - use smart button logic
-      
-      // For Strategies column
-      if (clickedStrategy) {
-        // Single strategy is selected - show PBC-specific button
-        showAllPBCStrategiesButton.style.display = 'block';
-      } else if (clickedPartner) {
-        // Partner is selected, strategies are filtered by partner - show PBC-specific button
-        showAllPBCStrategiesButton.style.display = 'block';
-      } else {
-        // All strategies for PBC are shown - show general button
-        seeAllButton.style.display = 'block';
-      }
-      
-      // For Partners column  
-      if (clickedPartner) {
-        // Single partner is selected - show PBC-specific button
-        showAllPBCPartnersButton.style.display = 'block';
-      } else {
-        // All partners for PBC are shown - show general button
-        seeAllPartnersButton.style.display = 'block';
-      }
-      
-    } else {
-      // No PBC component selected - use original logic
+      // Show both PBC back buttons when you've drilled down to any specific item
       if (clickedStrategy || clickedPartner) {
-        seeAllButton.style.display = 'block';
+        showAllPBCStrategiesButton.style.display = 'block';
+        showAllPBCPartnersButton.style.display = 'block';
       }
       
-      if (clickedPartner || clickedStrategy) {
-        seeAllPartnersButton.style.display = 'block';
+      // Additionally show partner-strategy button if both are selected
+      if (clickedStrategy && clickedPartner) {
+        showAllPartnerStrategiesButton.style.display = 'block';
+      }
+    } else {
+      // No PBC component selected - we're in "All Pillars" mode
+      // Update button text for the general case
+      showAllPBCStrategiesButton.textContent = `← Back to All Strategies`;
+      showAllPBCPartnersButton.textContent = `← Back to All Partners`;
+      
+      // Show contextual buttons when specific items are clicked in "All Pillars" mode
+      if (clickedStrategy || clickedPartner) {
+        showAllPBCStrategiesButton.style.display = 'block';
+        showAllPBCPartnersButton.style.display = 'block';
       }
       
+      // Additionally show partner-strategy button if both are selected
       if (clickedStrategy && clickedPartner) {
         showAllPartnerStrategiesButton.style.display = 'block';
       }
@@ -527,6 +582,7 @@ window.FilterManager = (function() {
     toggleColumn,
     unfilterColumns,
     updateButtonVisibility,
+    updatePBCTitle,
     getSelectedItems,
     setSelectedItems,
     addSelectedItem,

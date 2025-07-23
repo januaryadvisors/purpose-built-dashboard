@@ -426,19 +426,27 @@ window.onload = async function () {
       }
     });
     
-    // Determine highlight color: use theme color if available, otherwise use first connected strategy's color
-    const themeColor = getActiveThemeColor();
+    // Determine highlight color: use gray for "All Pillars" mode, otherwise use theme color
     let highlightColor;
     
-    if (themeColor) {
-      // Use the current theme color for consistent highlighting
-      highlightColor = themeColor;
-    } else if (connectedStrategies.length > 0) {
-      // Use the first connected strategy's PBC color
-      highlightColor = getStrategyThemeColor(connectedStrategies[0]);
+    // Check if we're in "All Pillars" mode (no PBC selected)
+    if (window.FilterSystem && window.FilterSystem.isPBCSelected && !window.FilterSystem.isPBCSelected()) {
+      // "All Pillars" mode - use gray for partner hover highlights
+      highlightColor = '#6B7280';
     } else {
-      // Fallback to Partners column color
-      highlightColor = columns[COLUMN_IDS.partners].columnColor;
+      // PBC mode - use existing logic
+      const themeColor = getActiveThemeColor();
+      
+      if (themeColor) {
+        // Use the current theme color for consistent highlighting
+        highlightColor = themeColor;
+      } else if (connectedStrategies.length > 0) {
+        // Use the first connected strategy's PBC color
+        highlightColor = getStrategyThemeColor(connectedStrategies[0]);
+      } else {
+        // Fallback to Partners column color
+        highlightColor = columns[COLUMN_IDS.partners].columnColor;
+      }
     }
     
     // Highlight the hovered partner itself
@@ -500,10 +508,8 @@ window.onload = async function () {
   // ========================================
   
   /** Navigation buttons for filtering controls */
-  const strategiesColumn = document.getElementById(COLUMN_IDS.strategies);
+    const strategiesColumn = document.getElementById(COLUMN_IDS.strategies);
   const partnersColumn = document.getElementById(COLUMN_IDS.partners);
-  const seeAllButton = document.createElement('button');
-  const seeAllPartnersButton = document.createElement('button');
   const showAllPartnerStrategiesButton = document.createElement('button');
   const showAllPBCStrategiesButton = document.createElement('button');
   const showAllPBCPartnersButton = document.createElement('button');
@@ -513,7 +519,7 @@ window.onload = async function () {
    */
   const updateNavigationButtons = () => {
     const config = {
-      seeAllButton, seeAllPartnersButton, showAllPartnerStrategiesButton, 
+      showAllPartnerStrategiesButton, 
       showAllPBCStrategiesButton, showAllPBCPartnersButton,
       clickedStrategy: isStrategySelected(), 
       clickedPartner: isPartnerSelected(), 
@@ -829,13 +835,7 @@ window.onload = async function () {
   // BUTTON SETUP & INITIALIZATION
   // ========================================
   
-  // Set up navigation buttons
-  seeAllButton.className = `${NAMESPACE}-see-all`;
-  seeAllButton.style.display = 'block';
-  seeAllButton.textContent = '× View All Strategies';
-  strategiesColumn.appendChild(seeAllButton);
-  seeAllButton.onclick = clearAllFilters;
-
+  // Set up contextual navigation buttons only
   showAllPartnerStrategiesButton.className = `${NAMESPACE}-see-all`;
   showAllPartnerStrategiesButton.style.display = 'none';
   showAllPartnerStrategiesButton.textContent = '← Show all Strategies for this Partner';
@@ -848,19 +848,31 @@ window.onload = async function () {
   showAllPBCStrategiesButton.textContent = '← Show all Strategies for this PBC Component';
   showAllPBCStrategiesButton.style.marginTop = '10px';
   strategiesColumn.appendChild(showAllPBCStrategiesButton);
-  showAllPBCStrategiesButton.onclick = showAllPBCStrategies;
-
-  seeAllPartnersButton.className = `${NAMESPACE}-see-all`;
-  seeAllPartnersButton.style.display = 'block';
-  seeAllPartnersButton.textContent = '× View All Partners';
-  partnersColumn.appendChild(seeAllPartnersButton);
-  seeAllPartnersButton.onclick = clearAllFilters;
+  showAllPBCStrategiesButton.onclick = () => {
+    // Check if we're in "All Pillars" mode or PBC mode
+    if (window.FilterSystem.isPBCSelected()) {
+      // PBC mode - go back to PBC strategies view
+      showAllPBCStrategies();
+    } else {
+      // "All Pillars" mode - clear all filters
+      clearAllFilters();
+    }
+  };
 
   showAllPBCPartnersButton.className = `${NAMESPACE}-see-all`;
   showAllPBCPartnersButton.style.display = 'none';
   showAllPBCPartnersButton.textContent = '← Show All Partners for this PBC Component';
   partnersColumn.appendChild(showAllPBCPartnersButton);
-  showAllPBCPartnersButton.onclick = showAllPBCPartners;
+  showAllPBCPartnersButton.onclick = () => {
+    // Check if we're in "All Pillars" mode or PBC mode
+    if (window.FilterSystem.isPBCSelected()) {
+      // PBC mode - go back to PBC partners view
+      showAllPBCPartners();
+    } else {
+      // "All Pillars" mode - clear all filters
+      clearAllFilters();
+    }
+  };
 
   // Populate all columns with data
   populateColumn(data.pbcComponents, COLUMN_IDS.pbcComponents);

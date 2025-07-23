@@ -262,11 +262,13 @@ window.FilterSystem = (function() {
         buttons.forEach(button => {
           if (button.textContent === filterState.selectedPBC) {
             button.classList.add('selected');
-            button.style.backgroundColor = `${pbcColor}80`;
-          } else {
+            button.style.backgroundColor = pbcColor; // Full opacity for darker active state
+            button.style.color = 'white'; // White text for better accessibility
+          } else if (!button.classList.contains('all-pillars-button')) {
             button.classList.remove('selected');
             const buttonColor = window.ColorManager.getPBCColor(button.textContent, data);
             button.style.backgroundColor = `${buttonColor}20`;
+            button.style.color = buttonColor; // Reset to original PBC color text
           }
         });
       }
@@ -284,9 +286,18 @@ window.FilterSystem = (function() {
         
         const buttons = pbcBar.querySelectorAll('div');
         buttons.forEach(button => {
-          button.classList.remove('selected');
-          const buttonColor = window.ColorManager.getPBCColor(button.textContent, data);
-          button.style.backgroundColor = `${buttonColor}20`;
+          if (button.classList.contains('all-pillars-button')) {
+            // Highlight "All Pillars" when no specific PBC is selected
+            button.classList.add('selected');
+            const neutralColor = '#6B7280';
+            button.style.backgroundColor = neutralColor; // Full opacity for darker active state
+            button.style.color = 'white'; // White text for better accessibility
+          } else {
+            button.classList.remove('selected');
+            const buttonColor = window.ColorManager.getPBCColor(button.textContent, data);
+            button.style.backgroundColor = `${buttonColor}20`;
+            button.style.color = buttonColor; // Reset to original PBC color text
+          }
         });
       }
     }
@@ -304,6 +315,11 @@ window.FilterSystem = (function() {
     window.FilterManager.clearSelectedItems();
     if (filterState.selectedPBC) {
       window.FilterManager.addSelectedItem(filterState.selectedPBC);
+    }
+    
+    // Update the PBC title display
+    if (window.FilterManager.updatePBCTitle) {
+      window.FilterManager.updatePBCTitle(filterState.selectedPBC, data);
     }
   };
 
