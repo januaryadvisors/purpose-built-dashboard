@@ -3,10 +3,10 @@ window.ColorManager = (function() {
 
   // PBC Component color palette - expanded to support more components
   const pbcColorPalette = [
-    '#7bbe6d', // Blue (Economic Vitality)
-    '#9BADC1', // Green (Education)
-    '#E8845F', // Orange/Peach (Community Vibrancy)
-    '#4DBAB1', // Purple (fourth component)
+    '#7bbe6d', // Green (Mixed-Income Housing)
+    '#F4C55C', // Yellow (Education)
+    '#E8845F', // Orange/Peach (Economic Vitality)
+    '#4DBAB1', // blue (Community Vibrancy)
     '#F2D480', // Yellow (fifth component if needed)
     '#8FB8C5', // Light Blue (sixth component if needed)
   ];

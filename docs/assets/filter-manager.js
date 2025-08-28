@@ -282,7 +282,7 @@ window.FilterManager = (function() {
                 // Check if we're in "All Pillars" mode or specific PBC mode
                 if (window.FilterSystem && window.FilterSystem.isPBCSelected && window.FilterSystem.isPBCSelected()) {
                   // Specific PBC is selected - use this button's own PBC component color
-                  itemDiv.style.backgroundColor = `${pbcColor}40`;
+                itemDiv.style.backgroundColor = `${pbcColor}40`;
                 } else {
                   // "All Pillars" mode - use gray color
                   const grayColor = '#6B7280';
@@ -313,8 +313,9 @@ window.FilterManager = (function() {
                 
                 // Reset to unselected styling for PBC components
                 const pbcColor = getPBCColor(item);
+                const darkerPbcColor = window.ColorManager.generateDarkerShade(pbcColor, 0.7); // 70% darker for better contrast
                 itemDiv.style.backgroundColor = `${pbcColor}20`;
-                itemDiv.style.color = pbcColor; // Reset to original PBC color text
+                itemDiv.style.color = darkerPbcColor; // Use darker shade for better contrast
                 
                 // Reset to original brand gradient when PBC component is deselected
                 updateBrandGradient(window.ColorManager.getOriginalBrandGradient());
@@ -427,7 +428,7 @@ window.FilterManager = (function() {
       window.currentPBCTitle.textContent = 'All Pillars';
       const neutralColor = '#6B7280';
       window.currentPBCTitle.style.color = neutralColor;
-    }
+      }
   };
 
   // Function to clear all filters and show all columns

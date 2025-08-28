@@ -145,7 +145,7 @@ window.FilterSystem = (function() {
    * @param {number} factor - Darkening factor (0.7 = 30% darker)
    * @returns {string} Darker hex color
    */
-  const generateDarkerShade = (color, factor = 0.7) => {
+  const generateDarkerShade = (color, factor = 0.5) => {
     // Remove # if present
     const cleanColor = color.replace('#', '');
     
@@ -181,7 +181,7 @@ window.FilterSystem = (function() {
     if (filterState.selectedPBC) {
       // Apply PBC theme color to contextual buttons only
       const pbcColor = window.ColorManager.getPBCColor(filterState.selectedPBC, data);
-      const darkerPbcColor = generateDarkerShade(pbcColor, 0.7);
+      const darkerPbcColor = generateDarkerShade(pbcColor, 0.5);
       
       contextualButtons.forEach(button => {
         button.style.setProperty('background-color', `${pbcColor}10`, 'important');
